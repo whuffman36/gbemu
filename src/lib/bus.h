@@ -19,7 +19,9 @@ typedef struct BusDef {
   // 0xFF80 - 0xFFFE
   uint8_t hram_[0x7E];
   // 0xFFFF
-  uint8_t interrupts_reg_;
+  uint8_t interrupts_enable_reg_;
+  // 0xFF0F
+  uint8_t interrupts_flag_;
   // Offset for bank switching wram
   uint8_t wram_bank_;
   // Offset for bank switching vram

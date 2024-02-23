@@ -13,12 +13,15 @@ set(msvc_cxx "$<COMPILE_LANG_AND_ID:C,MSVC>")
 # clangd interopability.
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
+find_package(SDL2 REQUIRED COMPONENTS SDL2)
+
 add_subdirectory(src/lib)
 add_executable(gbemu src/gbemu.c)
 add_executable(gbemu-test tests/test.c)
 
 # Link libraries.
 target_link_libraries(gbemu PUBLIC gblib)
+target_link_libraries(gbemu PUBLIC SDL2::SDL2)
 target_link_libraries(gbemu-test PUBLIC gblib)
 
 # Link header files.

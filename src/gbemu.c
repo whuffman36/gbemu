@@ -3,6 +3,7 @@
 
 #include "stdio.h"
 
+#include "SDL2/sdl.h"
 
 // gbemu <romfile>
 int main(int argc, char** argv) {
@@ -11,6 +12,11 @@ int main(int argc, char** argv) {
     return 1;
   }
   const char* romfile = argv[1];
+
+  if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    printf("Failed to initialize SDL: %s\n", SDL_GetError());
+    return 1;
+  }
 
   GlobalCtx global_ctx = {
     .mode = GB_MODE_GBC,
@@ -39,5 +45,6 @@ int main(int argc, char** argv) {
   }
 
   GameboyDestroy(&gb);
+  SDL_Quit();
   return 0;
 }

@@ -18,6 +18,9 @@ static const uint16_t _MIRROR_END = 0xFE00;
 static const uint16_t _OAM_BEGIN = _MIRROR_END;
 static const uint16_t _OAM_END = 0xFEA0;
 static const uint16_t _UNUSED_END = 0xFF00;
+static const uint16_t _INTERRUPTS_FLAG = 0xFF0F;
+static const uint16_t _VRAM_BANK_SELECT = 0xFF4F;
+static const uint16_t _WRAM_BANK_SELECT = 0xFF70;
 static const uint16_t _IO_REGISTERS_BEGIN = _UNUSED_END;
 static const uint16_t _IO_REGISTERS_END = 0xFF80;
 static const uint16_t _HRAM_BEGIN = _IO_REGISTERS_END;
@@ -25,9 +28,6 @@ static const uint16_t _HRAM_END = 0xFFFF;
 
 static const uint16_t _VRAM_BANK_SIZE = 0x2000;
 static const uint16_t _WRAM_BANK_SIZE = 0x1000;
-
-static const uint16_t _VRAM_BANK_SELECT = 0xFF4F;
-static const uint16_t _WRAM_BANK_SELECT = 0xFF70;
 
 
 Bus* BusCreate(GlobalCtx* const global_ctx, Cartridge* const cartridge) {
@@ -38,7 +38,7 @@ Bus* BusCreate(GlobalCtx* const global_ctx, Cartridge* const cartridge) {
   }
   bus->global_ctx_ = global_ctx;
   bus->cartridge_ = cartridge;
-  bus->interrupts_reg_ = 0;
+  bus->interrupts_enable_reg_ = 0;
   bus->wram_bank_ = 0;
   bus->vram_bank_ = 0;
   return bus;
@@ -88,6 +88,9 @@ uint8_t BusRead(const Bus* const bus, uint16_t addr) {
     // data.
     return 0xFF;
   }
+  if (addr == _INTERRUPTS_FLAG) {
+    return bus->interrupts_flag_;
+  }
   if (addr < _IO_REGISTERS_END) {
     // Read from IO registers.
     return bus->io_regs_[addr - _IO_REGISTERS_BEGIN];
@@ -97,7 +100,7 @@ uint8_t BusRead(const Bus* const bus, uint16_t addr) {
     return bus->hram_[addr - _HRAM_BEGIN];
   }
   // Read from interrupts register.
-  return bus->interrupts_reg_;
+  return bus->interrupts_enable_reg_;
 }
 
 
@@ -137,6 +140,9 @@ Result BusWrite(Bus* const bus, uint16_t addr, uint8_t data) {
     bus->global_ctx_->error = ILLEGAL_WRITE_TO_MEMORY;
     return RESULT_NOTOK;
   }
+  if (addr == _INTERRUPTS_FLAG) {
+    bus->interrupts_flag_ = data;
+  }
   if (addr == _VRAM_BANK_SELECT && bus->global_ctx_->mode == GB_MODE_GBC) {
     // Selects VRAM memory bank 0-1 in VRAM 0x8000-0x9FFF. GBC Only.
     // Only the least significant bit is used.
@@ -159,6 +165,6 @@ Result BusWrite(Bus* const bus, uint16_t addr, uint8_t data) {
     return RESULT_OK;
   }
   // Write to interrupts register.
-  bus->interrupts_reg_ = data;
+  bus->interrupts_enable_reg_ = data;
   return RESULT_OK;
 }

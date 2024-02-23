@@ -16,6 +16,7 @@ typedef enum ErrorCodeDef {
   MBC_TYPE_NOT_SUPPORTED = 5,
   ILLEGAL_INSTRUCTION = 6,
   ILLEGAL_INSTRUCTION_PARAMETER = 7,
+  UNKNOWN_INTERRUPT_REQUESTED = 8,
   NO_ERROR,
 } ErrorCode;
 
@@ -27,7 +28,8 @@ static const char* _ERROR_CODE_STRINGS[] = {
   "HEADER CHECKSUM FAILED",
   "MBC TYPE NOT SUPPORTED",
   "ILLEGAL INSTRUCTION",
-  "ILLEGAL INSTRUCTION PARAMETER"
+  "ILLEGAL INSTRUCTION PARAMETER",
+  "UNKNOWN INTERRUPT REQUESTED"
 };
 
 typedef enum GBModeDef {
@@ -38,7 +40,8 @@ typedef enum GBModeDef {
 typedef enum GBStatusDef {
   STATUS_RUNNING = 0,
   STATUS_PAUSED = 1,
-  STATUS_STOP = 2,
+  STATUS_HALT = 2,
+  STATUS_STOP = 3,
 } GBStatus;
 
 typedef struct GlobalCtxDef {

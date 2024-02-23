@@ -13,7 +13,11 @@ set(msvc_cxx "$<COMPILE_LANG_AND_ID:C,MSVC>")
 # clangd interopability.
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
+find_package(SDL2 REQUIRED COMPONENTS SDL2)
+
 add_library(gblib bus.c cartridge.c mbc.c gb.c cpu.c instruction.c)
+
+target_link_libraries(gblib PUBLIC SDL2::SDL2)
 
 # Link header files.
 target_include_directories(gblib PUBLIC

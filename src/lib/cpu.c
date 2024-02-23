@@ -12,11 +12,25 @@
 #define CombineBytes_(hi, lo) (uint16_t)(((uint16_t)hi << 8) | (uint16_t)lo)
 
 
+static const uint16_t _INTERRUPT_VBANK_ADDR = 0x0040;
+static const uint16_t _INTERRUPT_STAT_ADDR = 0x0048;
+static const uint16_t _INTERRUPT_TIMER_ADDR = 0x0050;
+static const uint16_t _INTERRUPT_SERIAL_ADDR = 0x0058;
+static const uint16_t _INTERRUPT_JOYPAD_ADDR = 0x0060;
+
+
+typedef enum ShiftDirectionDef {
+  RIGHT,
+  LEFT
+} ShiftDirection;
+
+
 void CpuInit(Cpu* const cpu) {
   cpu->bus_ = NULL;
   cpu->global_ctx_ = NULL;
 
   cpu->regs_.a_ = 0x11;
+  cpu->regs_.f_ = 0x80;
   cpu->regs_.b_ = 0x00;
   cpu->regs_.c_ = 0x00;
   cpu->regs_.d_ = 0xFF;
@@ -53,18 +67,18 @@ static void PrintCpuState(const Cpu* const cpu) {
   printf("\tH: 0x%02x | %d\n", cpu->regs_.h_, cpu->regs_.h_);
   printf("\tL: 0x%02x | %d\n", cpu->regs_.l_, cpu->regs_.l_);
   printf("\tAF: 0x%04x | %d\n", CombineBytes_(cpu->regs_.a_, cpu->regs_.f_),
-                              CombineBytes_(cpu->regs_.a_, cpu->regs_.f_));
+                                CombineBytes_(cpu->regs_.a_, cpu->regs_.f_));
   printf("\tBC: 0x%04x | %d\n", CombineBytes_(cpu->regs_.b_, cpu->regs_.c_),
-                              CombineBytes_(cpu->regs_.b_, cpu->regs_.c_));
+                                CombineBytes_(cpu->regs_.b_, cpu->regs_.c_));
   printf("\tDE: 0x%04x | %d\n", CombineBytes_(cpu->regs_.d_, cpu->regs_.e_),
-                              CombineBytes_(cpu->regs_.d_, cpu->regs_.e_));
+                                CombineBytes_(cpu->regs_.d_, cpu->regs_.e_));
   printf("\tHL: 0x%04x | %d\n", CombineBytes_(cpu->regs_.h_, cpu->regs_.l_),
-                              CombineBytes_(cpu->regs_.h_, cpu->regs_.l_));
+                                CombineBytes_(cpu->regs_.h_, cpu->regs_.l_));
   printf("Flags:\n");
   printf("\tZ: %d N: %d H: %d C: %d\n", cpu->flags_[FLAG_ZERO],
-                                      cpu->flags_[FLAG_ADD_SUB],
-                                      cpu->flags_[FLAG_HALF_CARRY],
-                                      cpu->flags_[FLAG_CARRY]);
+                                        cpu->flags_[FLAG_ADD_SUB],
+                                        cpu->flags_[FLAG_HALF_CARRY],
+                                        cpu->flags_[FLAG_CARRY]);
   printf("Program Counter:\n");
   printf("\t0x%04x | %d\n", cpu->pc_, cpu->pc_);
   printf("Stack Pointer:\n");
@@ -74,10 +88,48 @@ static void PrintCpuState(const Cpu* const cpu) {
 }
 
 
-typedef enum ShiftDirectionDef {
-  RIGHT,
-  LEFT
-} ShiftDirection;
+static void HandleInterrupt(Cpu* const cpu) {
+  cpu->interrupt_master_enable_ = 0;
+  uint16_t interrupt = 0;
+
+  if ((cpu->bus_->interrupts_flag_ & 0x01) == 1 &&
+      (cpu->bus_->interrupts_enable_reg_ & 0x01) == 1) {
+    interrupt = _INTERRUPT_VBANK_ADDR;
+    cpu->bus_->interrupts_flag_ &= 0xFE;
+  }
+  else if ((cpu->bus_->interrupts_flag_ & 0x02) == 2 &&
+           (cpu->bus_->interrupts_enable_reg_ & 0x02) == 2) {
+    interrupt = _INTERRUPT_STAT_ADDR;
+    cpu->bus_->interrupts_flag_ &= 0xFD;
+  }
+  else if ((cpu->bus_->interrupts_flag_ & 0x04) == 4 &&
+           (cpu->bus_->interrupts_enable_reg_ & 0x04) == 4) {
+    interrupt = _INTERRUPT_TIMER_ADDR;
+    cpu->bus_->interrupts_flag_ &= 0xFB;
+  }
+  else if ((cpu->bus_->interrupts_flag_ & 0x08) == 8 &&
+           (cpu->bus_->interrupts_enable_reg_ & 0x08) == 8) {
+    interrupt = _INTERRUPT_SERIAL_ADDR;
+    cpu->bus_->interrupts_flag_ &= 0xF7;
+  }
+  else if ((cpu->bus_->interrupts_flag_ & 0x10) == 16 &&
+           (cpu->bus_->interrupts_enable_reg_ & 0x10) == 16) {
+    interrupt = _INTERRUPT_JOYPAD_ADDR;
+    cpu->bus_->interrupts_flag_ &= 0xEF;
+  }
+  else {
+    cpu->global_ctx_->error = UNKNOWN_INTERRUPT_REQUESTED;
+    return;
+  }
+
+  uint8_t hi = MostSigByte_(cpu->pc_);
+  uint8_t lo = LeastSigByte_(cpu->pc_);
+  BusWrite(cpu->bus_, --cpu->sp_, hi);
+  BusWrite(cpu->bus_, --cpu->sp_, lo);
+  cpu->pc_ = interrupt;
+
+  cpu->global_ctx_->clock += 20;
+}
 
 
 static uint8_t* ReadReg(Cpu* const cpu, InstructionParameter reg) {
@@ -159,6 +211,14 @@ static void WriteImm16(const Cpu* const cpu, uint16_t addr, uint16_t data) {
   uint8_t lo = LeastSigByte_(data);
   BusWrite(cpu->bus_, addr, lo);
   BusWrite(cpu->bus_, addr + 1, hi);
+}
+
+
+static void UpdateFlagsRegister(Cpu* const cpu) {
+  cpu->regs_.f_ |= cpu->flags_[FLAG_ZERO] << 7;
+  cpu->regs_.f_ |= cpu->flags_[FLAG_ADD_SUB] << 6;
+  cpu->regs_.f_ |= cpu->flags_[FLAG_HALF_CARRY] << 5;
+  cpu->regs_.f_ |= cpu->flags_[FLAG_CARRY] << 4;
 }
 
 
@@ -344,7 +404,7 @@ static void Increment(Cpu* const cpu, const Instruction* const instr) {
   uint16_t reg_hl = 0;
 
   if (instr->param1_ >= PARA_REG_A && instr->param1_ <= PARA_REG_L) {
-    result = ++(*ReadReg(cpu, instr->param2_));
+    result = ++(*ReadReg(cpu, instr->param1_));
     is_8_bit = 1;
   }
   else if (instr->param1_ >= PARA_REG_BC && instr->param1_ <= PARA_REG_HL) {
@@ -371,6 +431,7 @@ static void Increment(Cpu* const cpu, const Instruction* const instr) {
     cpu->flags_[FLAG_ADD_SUB] = 0;
     cpu->flags_[FLAG_ZERO] = (result == 0);
     cpu->flags_[FLAG_HALF_CARRY] = (result & 0x0F) == 0x00;
+    UpdateFlagsRegister(cpu);
   }
 }
 
@@ -381,7 +442,7 @@ static void Decrement(Cpu* const cpu, const Instruction* const instr) {
   uint16_t reg_hl = 0;
 
   if (instr->param1_ >= PARA_REG_A && instr->param1_ <= PARA_REG_L) {
-    result = --(*ReadReg(cpu, instr->param2_));
+    result = --(*ReadReg(cpu, instr->param1_));
     is_8_bit = 1;
   }
   else if (instr->param1_ >= PARA_REG_BC && instr->param1_ <= PARA_REG_HL) {
@@ -408,6 +469,7 @@ static void Decrement(Cpu* const cpu, const Instruction* const instr) {
     cpu->flags_[FLAG_ADD_SUB] = 1;
     cpu->flags_[FLAG_ZERO] = (result == 0);
     cpu->flags_[FLAG_HALF_CARRY] = (result & 0x0F) == 0x0F;
+    UpdateFlagsRegister(cpu);
   }
 }
 
@@ -631,6 +693,7 @@ static void Add(Cpu* const cpu, const Instruction* const instr, int carry) {
       return;
   }
   cpu->flags_[FLAG_ADD_SUB] = 0;
+  UpdateFlagsRegister(cpu);
 }
 
 
@@ -657,10 +720,16 @@ static void Subtract(Cpu* const cpu, const Instruction* const instr,
                             ? cpu->flags_[FLAG_CARRY]
                             : (initial < cpu->regs_.a_);
   cpu->flags_[FLAG_HALF_CARRY] = (cpu->regs_.a_ & 0x0F) == 0x0F;
+  UpdateFlagsRegister(cpu);
 }
 
 
+// I do not really understand  this instruction. Commented out is my
+// implementation, essentially just converting the A reg to be in Binary
+// Coded Decimal (BCD) format. Below is the implementation from youtube:
+// "Gameboy Emulator Development - Part 09" by Low Level Devel.
 static void DecimalAdjustAccumulator(Cpu* const cpu) {
+  /*
   uint8_t hi = (cpu->regs_.a_ & 0xF0) >> 4;
   uint8_t lo = (cpu->regs_.a_ & 0x0F);
 
@@ -675,6 +744,25 @@ static void DecimalAdjustAccumulator(Cpu* const cpu) {
   cpu->flags_[FLAG_ZERO] = cpu->regs_.a_ == 0;
   cpu->flags_[FLAG_HALF_CARRY] = 0;
   cpu->flags_[FLAG_CARRY] = (cpu->regs_.a_ & 0x0F) > 0x0F;
+  */
+  uint8_t u = 0;
+  uint8_t carry_flag = 0;
+
+  if (cpu->flags_[FLAG_HALF_CARRY] || (!cpu->flags_[FLAG_ADD_SUB] &&
+                                      ((cpu->regs_.a_ & 0x0F) > 9))) {
+    u = 6;
+  }
+  if (cpu->flags_[FLAG_CARRY] || (!cpu->flags_[FLAG_ADD_SUB] &&
+                                  (cpu->regs_.a_ > 0x99))) {
+    u |= 0x60;
+    carry_flag = 1;
+  }
+  cpu->regs_.a_ += cpu->flags_[FLAG_ADD_SUB] ? -u : u;
+
+  cpu->flags_[FLAG_ZERO] = cpu->regs_.a_ == 0;
+  cpu->flags_[FLAG_HALF_CARRY] = 0;
+  cpu->flags_[FLAG_CARRY] = carry_flag;
+  UpdateFlagsRegister(cpu);
 }
 
 
@@ -693,6 +781,7 @@ static void BitwiseAnd(Cpu* const cpu, const Instruction* const instr) {
   cpu->flags_[FLAG_ADD_SUB] = 0;
   cpu->flags_[FLAG_CARRY] = 0;
   cpu->flags_[FLAG_HALF_CARRY] = 1;
+  UpdateFlagsRegister(cpu);
 }
 
 
@@ -711,6 +800,7 @@ static void BitwiseOr(Cpu* const cpu, const Instruction* const instr) {
   cpu->flags_[FLAG_ADD_SUB] = 0;
   cpu->flags_[FLAG_CARRY] = 0;
   cpu->flags_[FLAG_HALF_CARRY] = 0;
+  UpdateFlagsRegister(cpu);
 }
 
 
@@ -729,6 +819,7 @@ static void BitwisXor(Cpu* const cpu, const Instruction* const instr) {
   cpu->flags_[FLAG_ADD_SUB] = 0;
   cpu->flags_[FLAG_CARRY] = 0;
   cpu->flags_[FLAG_HALF_CARRY] = 0;
+  UpdateFlagsRegister(cpu);
 }
 
 
@@ -802,6 +893,7 @@ static void Rotate(Cpu* const cpu, const Instruction* const instr,
   }
   cpu->flags_[FLAG_HALF_CARRY] = 0;
   cpu->flags_[FLAG_ADD_SUB] = 0;
+  UpdateFlagsRegister(cpu);
 }
 
 
@@ -853,6 +945,7 @@ static void Shift(Cpu* const cpu, const Instruction* const instr,
   }
   cpu->flags_[FLAG_HALF_CARRY] = 0;
   cpu->flags_[FLAG_ADD_SUB] = 0;
+  UpdateFlagsRegister(cpu);
 }
 
 
@@ -879,6 +972,7 @@ static void Swap(Cpu* const cpu, const Instruction* const instr) {
   cpu->flags_[FLAG_ADD_SUB] = 0;
   cpu->flags_[FLAG_CARRY] = 0;
   cpu->flags_[FLAG_HALF_CARRY] = 0;
+  UpdateFlagsRegister(cpu);
 }
 
 
@@ -898,6 +992,7 @@ static void Bit(Cpu* const cpu, const Instruction* const instr) {
 
   cpu->flags_[FLAG_ADD_SUB] = 0;
   cpu->flags_[FLAG_HALF_CARRY] = 0;
+  UpdateFlagsRegister(cpu);
 }
 
 
@@ -939,7 +1034,17 @@ static void Reset(Cpu* const cpu, const Instruction* const instr) {
 
 void CpuStep(Cpu* const cpu) {
   static uint8_t cb_prefix = 0;
+  static uint8_t cpu_ime_enable = 0;
   uint8_t tmp = 0;
+
+  if (cpu_ime_enable) {
+    cpu->interrupt_master_enable_ = 1;
+    cpu_ime_enable = 0;
+  }
+  if (cpu->interrupt_master_enable_ &&
+     (cpu->bus_->interrupts_enable_reg_ & cpu->bus_->interrupts_flag_) != 0) {
+    HandleInterrupt(cpu);
+  }
 
   // Fetch.
   uint8_t opcode = BusRead(cpu->bus_, cpu->pc_++);
@@ -967,7 +1072,7 @@ void CpuStep(Cpu* const cpu) {
       break;
     case OP_HALT:
       // Stop system clock.
-      cpu->global_ctx_->status = STATUS_STOP;
+      cpu->global_ctx_->status = STATUS_HALT;
       break;
     case OP_LD:
       Load(cpu, &instr);
@@ -1000,17 +1105,18 @@ void CpuStep(Cpu* const cpu) {
       Return(cpu, &instr);
       break;
     case OP_RETI:
-      cpu->interrupt_master_enable_ = 1;
+      cpu_ime_enable = 1;
       Return(cpu, &instr);
       break;
     case OP_RST:
       Restart(cpu, &instr);
       break;
     case OP_DI:
+      cpu_ime_enable = 0;
       cpu->interrupt_master_enable_ = 0;
       break;
     case OP_EI:
-      cpu->interrupt_master_enable_ = 1;
+      cpu_ime_enable = 1;
       break;
     case OP_ADD:
       Add(cpu, &instr, /*carry=*/0);
