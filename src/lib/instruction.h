@@ -90,12 +90,12 @@ typedef enum ConditionDef {
 } Condition;
 
 typedef struct InstructionDef {
-  Opcode opcode_;
-  InstructionParameter param1_;
-  InstructionParameter param2_;
-  Condition cond_;
-  uint8_t cycles_;
-  uint8_t raw_instr_;
+  Opcode opcode;
+  InstructionParameter param1;
+  InstructionParameter param2;
+  Condition cond;
+  uint8_t cycles;
+  uint8_t raw_instr;
 } Instruction;
 
 extern const Instruction _INSTRUCTION_MAP[0x100];

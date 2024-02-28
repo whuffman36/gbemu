@@ -8,10 +8,10 @@
 
 
 typedef struct GameboyDef {
-  Cpu cpu_;
-  Cartridge* cartridge_;
-  Bus* bus_;
-  GlobalCtx* global_ctx_;
+  Cpu cpu;
+  Cartridge* cartridge;
+  Bus* bus;
+  GlobalCtx* global_ctx;
 } Gameboy;
 
 

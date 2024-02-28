@@ -2,7 +2,7 @@
 #define GLOBAL_H
 
 #include <pthread.h>
-
+#include <stdint.h>
 
 #define GB_DEBUG_MODE
 
@@ -49,6 +49,14 @@ typedef enum GBStatusDef {
   STATUS_STOP = 3,
 } GBStatus;
 
+typedef enum InterruptTypeDef {
+  INTERRUPT_VBANK = 0,
+  INTERRUPT_STAT = 1,
+  INTERRUPT_TIMER = 2,
+  INTERRUPT_SERIAL = 3,
+  INTERRUPT_JOYPAD = 4
+} InterruptType;
+
 typedef struct GlobalCtxDef {
   GBMode mode;
   ErrorCode error;
@@ -57,5 +65,8 @@ typedef struct GlobalCtxDef {
   pthread_mutex_t* interrupt_mtx;
   pthread_cond_t* interrupt_write;
 } GlobalCtx;
+
+
+extern void RequestInterrupt(InterruptType it, uint8_t* const interrupts_flag);
 
 #endif

@@ -29,130 +29,154 @@ typedef enum ShiftDirectionDef {
 
 
 void CpuInit(Cpu* const cpu) {
-  cpu->bus_ = NULL;
-  cpu->global_ctx_ = NULL;
+  cpu->bus = NULL;
+  cpu->global_ctx = NULL;
 
-  cpu->regs_.a_ = 0x11;
-  cpu->regs_.f_ = 0x80;
-  cpu->regs_.b_ = 0x00;
-  cpu->regs_.c_ = 0x00;
-  cpu->regs_.d_ = 0xFF;
-  cpu->regs_.e_ = 0x56;
-  cpu->regs_.h_ = 0x00;
-  cpu->regs_.l_ = 0x0D;
-  cpu->flags_[FLAG_CARRY] = 0;
-  cpu->flags_[FLAG_HALF_CARRY] = 0;
-  cpu->flags_[FLAG_ADD_SUB] = 0;
-  cpu->flags_[FLAG_ZERO] = 1;
-  cpu->pc_ = 0x0100;
-  cpu->sp_ = 0xFFFE;
-  cpu->interrupt_master_enable_ = 0;
+  cpu->regs.a = 0x11;
+  cpu->regs.f = 0x80;
+  cpu->regs.b = 0x00;
+  cpu->regs.c = 0x00;
+  cpu->regs.d = 0xFF;
+  cpu->regs.e = 0x56;
+  cpu->regs.h = 0x00;
+  cpu->regs.l = 0x0D;
+  cpu->flags[FLAG_CARRY] = 0;
+  cpu->flags[FLAG_HALF_CARRY] = 0;
+  cpu->flags[FLAG_ADD_SUB] = 0;
+  cpu->flags[FLAG_ZERO] = 1;
+  cpu->pc = 0x0100;
+  cpu->sp = 0xFFFE;
+  cpu->interrupt_master_enable = 0;
 }
 
 
 #ifdef GB_DEBUG_MODE
   static void PrintInstruction(const Instruction* const instr) {
-    printf("Raw binary: 0x%02x\n", instr->raw_instr_);
-    printf("%s %s %s %s\n\n", _INSTRUCTION_STR_MAP[instr->opcode_],
-                              _INSTRUCTION_PARAM_STR_MAP[instr->param1_],
-                              _INSTRUCTION_PARAM_STR_MAP[instr->param2_],
-                              _INSTRUCTION_COND_STR_MAP[instr->cond_]);
+    printf("Raw binary: 0x%02x\n", instr->raw_instr);
+    printf("%s %s %s %s\n\n", _INSTRUCTION_STR_MAP[instr->opcode],
+                              _INSTRUCTION_PARAM_STR_MAP[instr->param1],
+                              _INSTRUCTION_PARAM_STR_MAP[instr->param2],
+                              _INSTRUCTION_COND_STR_MAP[instr->cond]);
     printf("-------------------------------------------------\n\n");
   }
 
 
   static void PrintCpuState(const Cpu* const cpu) {
     printf("Registers:\n");
-    printf("\tA: 0x%02x | %d\n", cpu->regs_.a_, cpu->regs_.a_);
-    printf("\tB: 0x%02x | %d\n", cpu->regs_.b_, cpu->regs_.b_);
-    printf("\tC: 0x%02x | %d\n", cpu->regs_.c_, cpu->regs_.c_);
-    printf("\tD: 0x%02x | %d\n", cpu->regs_.d_, cpu->regs_.d_);
-    printf("\tE: 0x%02x | %d\n", cpu->regs_.e_, cpu->regs_.e_);
-    printf("\tH: 0x%02x | %d\n", cpu->regs_.h_, cpu->regs_.h_);
-    printf("\tL: 0x%02x | %d\n", cpu->regs_.l_, cpu->regs_.l_);
-    printf("\tAF: 0x%04x | %d\n", CombineBytes_(cpu->regs_.a_, cpu->regs_.f_),
-                                  CombineBytes_(cpu->regs_.a_, cpu->regs_.f_));
-    printf("\tBC: 0x%04x | %d\n", CombineBytes_(cpu->regs_.b_, cpu->regs_.c_),
-                                  CombineBytes_(cpu->regs_.b_, cpu->regs_.c_));
-    printf("\tDE: 0x%04x | %d\n", CombineBytes_(cpu->regs_.d_, cpu->regs_.e_),
-                                  CombineBytes_(cpu->regs_.d_, cpu->regs_.e_));
-    printf("\tHL: 0x%04x | %d\n", CombineBytes_(cpu->regs_.h_, cpu->regs_.l_),
-                                  CombineBytes_(cpu->regs_.h_, cpu->regs_.l_));
+    printf("\tA: 0x%02x | %d\n", cpu->regs.a, cpu->regs.a);
+    printf("\tB: 0x%02x | %d\n", cpu->regs.b, cpu->regs.b);
+    printf("\tC: 0x%02x | %d\n", cpu->regs.c, cpu->regs.c);
+    printf("\tD: 0x%02x | %d\n", cpu->regs.d, cpu->regs.d);
+    printf("\tE: 0x%02x | %d\n", cpu->regs.e, cpu->regs.e);
+    printf("\tH: 0x%02x | %d\n", cpu->regs.h, cpu->regs.h);
+    printf("\tL: 0x%02x | %d\n", cpu->regs.l, cpu->regs.l);
+    printf("\tAF: 0x%04x | %d\n", CombineBytes_(cpu->regs.a, cpu->regs.f),
+                                  CombineBytes_(cpu->regs.a, cpu->regs.f));
+    printf("\tBC: 0x%04x | %d\n", CombineBytes_(cpu->regs.b, cpu->regs.c),
+                                  CombineBytes_(cpu->regs.b, cpu->regs.c));
+    printf("\tDE: 0x%04x | %d\n", CombineBytes_(cpu->regs.d, cpu->regs.e),
+                                  CombineBytes_(cpu->regs.d, cpu->regs.e));
+    printf("\tHL: 0x%04x | %d\n", CombineBytes_(cpu->regs.h, cpu->regs.l),
+                                  CombineBytes_(cpu->regs.h, cpu->regs.l));
     printf("Flags:\n");
-    printf("\tZ: %d N: %d H: %d C: %d\n", cpu->flags_[FLAG_ZERO],
-                                          cpu->flags_[FLAG_ADD_SUB],
-                                          cpu->flags_[FLAG_HALF_CARRY],
-                                          cpu->flags_[FLAG_CARRY]);
+    printf("\tZ: %d N: %d H: %d C: %d\n", cpu->flags[FLAG_ZERO],
+                                          cpu->flags[FLAG_ADD_SUB],
+                                          cpu->flags[FLAG_HALF_CARRY],
+                                          cpu->flags[FLAG_CARRY]);
     printf("Program Counter:\n");
-    printf("\t0x%04x | %d\n", cpu->pc_, cpu->pc_);
+    printf("\t0x%04x | %d\n", cpu->pc, cpu->pc);
     printf("Stack Pointer:\n");
-    printf("\t0x%04x | %d\n", cpu->sp_, cpu->sp_);
+    printf("\t0x%04x | %d\n", cpu->sp, cpu->sp);
     printf("Master Interrupt Enable:\n");
-    printf("\t%s\n\n", cpu->interrupt_master_enable_ ? "Enabled" : "Disabled");
+    printf("\t%s\n\n", cpu->interrupt_master_enable ? "Enabled" : "Disabled");
   }
 #endif
 
 
+void RequestInterrupt(InterruptType it, uint8_t *const interrupts_flag) {
+  switch(it) {
+    case INTERRUPT_VBANK:
+      *interrupts_flag |= 0x01;
+      break;
+    case INTERRUPT_STAT:
+      *interrupts_flag |= 0x02;
+      break;
+    case INTERRUPT_TIMER:
+      *interrupts_flag |= 0x04;
+      break;
+    case INTERRUPT_SERIAL:
+      *interrupts_flag |= 0x08;
+      break;
+    case INTERRUPT_JOYPAD:
+      *interrupts_flag |= 0x10;
+      break;
+  }
+}
+
+
 static void HandleInterrupt(Cpu* const cpu) {
-  cpu->interrupt_master_enable_ = 0;
+  cpu->interrupt_master_enable = 0;
   uint16_t interrupt = 0;
 
-  if ((cpu->bus_->interrupts_flag_ & 0x01) == 1 &&
-      (cpu->bus_->interrupts_enable_reg_ & 0x01) == 1) {
+  if ((cpu->bus->interrupts_flag & 0x01) == 1 &&
+      (cpu->bus->interrupts_enable_reg & 0x01) == 1) {
     interrupt = _INTERRUPT_VBANK_ADDR;
-    cpu->bus_->interrupts_flag_ &= 0xFE;
+    cpu->bus->interrupts_flag &= 0xFE;
   }
-  else if ((cpu->bus_->interrupts_flag_ & 0x02) == 2 &&
-           (cpu->bus_->interrupts_enable_reg_ & 0x02) == 2) {
+  else if ((cpu->bus->interrupts_flag & 0x02) == 2 &&
+           (cpu->bus->interrupts_enable_reg & 0x02) == 2) {
     interrupt = _INTERRUPT_STAT_ADDR;
-    cpu->bus_->interrupts_flag_ &= 0xFD;
+    cpu->bus->interrupts_flag &= 0xFD;
   }
-  else if ((cpu->bus_->interrupts_flag_ & 0x04) == 4 &&
-           (cpu->bus_->interrupts_enable_reg_ & 0x04) == 4) {
+  else if ((cpu->bus->interrupts_flag & 0x04) == 4 &&
+           (cpu->bus->interrupts_enable_reg & 0x04) == 4) {
     interrupt = _INTERRUPT_TIMER_ADDR;
-    cpu->bus_->interrupts_flag_ &= 0xFB;
+    cpu->bus->interrupts_flag &= 0xFB;
   }
-  else if ((cpu->bus_->interrupts_flag_ & 0x08) == 8 &&
-           (cpu->bus_->interrupts_enable_reg_ & 0x08) == 8) {
+  else if ((cpu->bus->interrupts_flag & 0x08) == 8 &&
+           (cpu->bus->interrupts_enable_reg & 0x08) == 8) {
     interrupt = _INTERRUPT_SERIAL_ADDR;
-    cpu->bus_->interrupts_flag_ &= 0xF7;
+    cpu->bus->interrupts_flag &= 0xF7;
   }
-  else if ((cpu->bus_->interrupts_flag_ & 0x10) == 16 &&
-           (cpu->bus_->interrupts_enable_reg_ & 0x10) == 16) {
+  else if ((cpu->bus->interrupts_flag & 0x10) == 16 &&
+           (cpu->bus->interrupts_enable_reg & 0x10) == 16) {
     interrupt = _INTERRUPT_JOYPAD_ADDR;
-    cpu->bus_->interrupts_flag_ &= 0xEF;
+    cpu->bus->interrupts_flag &= 0xEF;
   }
   else {
-    cpu->global_ctx_->error = UNKNOWN_INTERRUPT_REQUESTED;
+    cpu->global_ctx->error = UNKNOWN_INTERRUPT_REQUESTED;
     return;
   }
 
-  uint8_t hi = MostSigByte_(cpu->pc_);
-  uint8_t lo = LeastSigByte_(cpu->pc_);
-  BusWrite(cpu->bus_, --cpu->sp_, hi);
-  BusWrite(cpu->bus_, --cpu->sp_, lo);
-  cpu->pc_ = interrupt;
+  uint8_t hi = MostSigByte_(cpu->pc);
+  uint8_t lo = LeastSigByte_(cpu->pc);
+  BusWrite(cpu->bus, --cpu->sp, hi);
+  BusWrite(cpu->bus, --cpu->sp, lo);
+  cpu->pc = interrupt;
 
-  cpu->global_ctx_->clock += 20;
+  cpu->global_ctx->clock += 20;
+  for (int i = 0; i < 5; ++i) {
+    TimerTick(&cpu->bus->timer, &cpu->bus->interrupts_flag);
+  }
 }
 
 
 static uint8_t* ReadReg(Cpu* const cpu, InstructionParameter reg) {
   switch(reg) {
     case PARA_REG_A:
-      return &cpu->regs_.a_;
+      return &cpu->regs.a ;
     case PARA_REG_B:
-      return &cpu->regs_.b_;
+      return &cpu->regs.b ;
     case PARA_REG_C:
-      return &cpu->regs_.c_;
+      return &cpu->regs.c ;
     case PARA_REG_D:
-      return &cpu->regs_.d_;
+      return &cpu->regs.d ;
     case PARA_REG_E:
-      return &cpu->regs_.e_;
+      return &cpu->regs.e ;
     case PARA_REG_H:
-      return &cpu->regs_.h_;
+      return &cpu->regs.h ;
     case PARA_REG_L:
-      return &cpu->regs_.l_;
+      return &cpu->regs.l ;
     default:
       __builtin_unreachable();
   }
@@ -162,15 +186,15 @@ static uint8_t* ReadReg(Cpu* const cpu, InstructionParameter reg) {
 static uint16_t ReadReg16(const Cpu* const cpu, InstructionParameter reg) {
   switch(reg) {
     case PARA_REG_AF:
-      return CombineBytes_(cpu->regs_.a_, cpu->regs_.f_);
+      return CombineBytes_(cpu->regs.a, cpu->regs.f);
     case PARA_REG_BC:
-      return CombineBytes_(cpu->regs_.b_, cpu->regs_.c_);
+      return CombineBytes_(cpu->regs.b, cpu->regs.c);
     case PARA_REG_DE:
-      return CombineBytes_(cpu->regs_.d_, cpu->regs_.e_);
+      return CombineBytes_(cpu->regs.d, cpu->regs.e);
     case PARA_REG_HL:
-      return CombineBytes_(cpu->regs_.h_, cpu->regs_.l_);
+      return CombineBytes_(cpu->regs.h, cpu->regs.l);
     case PARA_SP:
-      return cpu->sp_;
+      return cpu->sp ;
     default:
       __builtin_unreachable();
   }
@@ -181,20 +205,20 @@ static void WriteReg16(Cpu* const cpu, InstructionParameter reg,
                        uint16_t data) {
   switch(reg) {
     case PARA_REG_AF:
-      cpu->regs_.a_ = data >> 8;
-      cpu->regs_.f_ = data;
+      cpu->regs.a = data >> 8;
+      cpu->regs.f = data;
       break;
     case PARA_REG_BC:
-      cpu->regs_.b_ = data >> 8;
-      cpu->regs_.c_ = data;
+      cpu->regs.b = data >> 8;
+      cpu->regs.c = data;
       break;
     case PARA_REG_DE:
-      cpu->regs_.d_ = data >> 8;
-      cpu->regs_.e_ = data;
+      cpu->regs.d = data >> 8;
+      cpu->regs.e = data;
       break;
     case PARA_REG_HL:
-      cpu->regs_.h_ = data >> 8;
-      cpu->regs_.l_ = data;
+      cpu->regs.h = data >> 8;
+      cpu->regs.l = data;
       break;
     default:
       break;
@@ -204,8 +228,8 @@ static void WriteReg16(Cpu* const cpu, InstructionParameter reg,
 
 static uint16_t ReadImm16(Cpu* const cpu) {
   // Memory is little endian.
-  uint16_t lo = (uint16_t)BusRead(cpu->bus_, cpu->pc_++);
-  uint16_t hi = (uint16_t)BusRead(cpu->bus_, cpu->pc_++);
+  uint16_t lo = (uint16_t)BusRead(cpu->bus, cpu->pc++);
+  uint16_t hi = (uint16_t)BusRead(cpu->bus, cpu->pc++);
   return CombineBytes_(hi, lo);
 }
 
@@ -214,28 +238,28 @@ static void WriteImm16(const Cpu* const cpu, uint16_t addr, uint16_t data) {
   // Memory is little endian.
   uint8_t hi = MostSigByte_(data);
   uint8_t lo = LeastSigByte_(data);
-  BusWrite(cpu->bus_, addr, lo);
-  BusWrite(cpu->bus_, addr + 1, hi);
+  BusWrite(cpu->bus, addr, lo);
+  BusWrite(cpu->bus, addr + 1, hi);
 }
 
 
 static void UpdateFlagsRegister(Cpu* const cpu) {
-  cpu->regs_.f_ |= cpu->flags_[FLAG_ZERO] << 7;
-  cpu->regs_.f_ |= cpu->flags_[FLAG_ADD_SUB] << 6;
-  cpu->regs_.f_ |= cpu->flags_[FLAG_HALF_CARRY] << 5;
-  cpu->regs_.f_ |= cpu->flags_[FLAG_CARRY] << 4;
+  cpu->regs.f |= cpu->flags[FLAG_ZERO] << 7;
+  cpu->regs.f |= cpu->flags[FLAG_ADD_SUB] << 6;
+  cpu->regs.f |= cpu->flags[FLAG_HALF_CARRY] << 5;
+  cpu->regs.f |= cpu->flags[FLAG_CARRY] << 4;
 }
 
 
 static void Halt(Cpu* const cpu) {
-  pthread_mutex_lock(cpu->global_ctx_->interrupt_mtx);
-  while (!(cpu->interrupt_master_enable_ &&
-          (cpu->bus_->interrupts_enable_reg_ &
-           cpu->bus_->interrupts_flag_) != 0)) {
-    pthread_cond_wait(cpu->global_ctx_->interrupt_write, cpu->global_ctx_->interrupt_mtx);
+  pthread_mutex_lock(cpu->global_ctx->interrupt_mtx);
+  while (!(cpu->interrupt_master_enable &&
+          (cpu->bus->interrupts_enable_reg &
+           cpu->bus->interrupts_flag) != 0)) {
+    pthread_cond_wait(cpu->global_ctx->interrupt_write, cpu->global_ctx->interrupt_mtx);
   }
   HandleInterrupt(cpu);
-  pthread_mutex_unlock(cpu->global_ctx_->interrupt_mtx);
+  pthread_mutex_unlock(cpu->global_ctx->interrupt_mtx);
 }
 
 
@@ -246,68 +270,68 @@ static void LoadReg(Cpu* const cpu, const Instruction* const instr) {
   uint16_t reg_hl = 0;
 
   // Source is from an 8 bit register.
-  if (instr->param2_ >= PARA_REG_A && instr->param2_ <= PARA_REG_L) {
-    source = *ReadReg(cpu, instr->param2_);
+  if (instr->param2 >= PARA_REG_A && instr->param2 <= PARA_REG_L) {
+    source = *ReadReg(cpu, instr->param2);
   }
   // Source is from memory[16 bit register].
-  else if (instr->param2_ >= PARA_MEM_REG_BC && instr->param2_ <= PARA_MEM_REG_HL) {
-    source = BusRead(cpu->bus_, ReadReg16(cpu, instr->param2_));
+  else if (instr->param2 >= PARA_MEM_REG_BC && instr->param2 <= PARA_MEM_REG_HL) {
+    source = BusRead(cpu->bus, ReadReg16(cpu, instr->param2));
   }
   // Other sources.
   else {
-    switch(instr->param2_) {
+    switch(instr->param2) {
       case PARA_SP_IMM_8:
-        offset = (int8_t)BusRead(cpu->bus_, cpu->pc_++);
-        source_16 = (uint16_t)((int16_t)cpu->sp_ + offset);
+        offset = (int8_t)BusRead(cpu->bus, cpu->pc++);
+        source_16 = (uint16_t)((int16_t)cpu->sp + offset);
         break;
       case PARA_MEM_REG_HL_INC:
         reg_hl = ReadReg16(cpu, PARA_REG_HL);
-        source = BusRead(cpu->bus_, reg_hl);
+        source = BusRead(cpu->bus, reg_hl);
         WriteReg16(cpu, PARA_REG_HL, reg_hl + 1);
         break;
       case PARA_MEM_REG_HL_DEC:
         reg_hl = ReadReg16(cpu, PARA_REG_HL);
-        source = BusRead(cpu->bus_, reg_hl);
+        source = BusRead(cpu->bus, reg_hl);
         WriteReg16(cpu, PARA_REG_HL, reg_hl - 1);
         break;
       case PARA_IMM_8:
-        source = BusRead(cpu->bus_, cpu->pc_);
-        cpu->pc_++;
+        source = BusRead(cpu->bus, cpu->pc);
+        cpu->pc++;
         break;
       case PARA_IMM_16:
         source_16 = ReadImm16(cpu);
         break;
       case PARA_ADDR:
         source_16 = ReadImm16(cpu);
-        source = BusRead(cpu->bus_, source_16);
+        source = BusRead(cpu->bus, source_16);
         break;
       default:
-        cpu->global_ctx_->error = ILLEGAL_INSTRUCTION_PARAMETER;
+        cpu->global_ctx->error = ILLEGAL_INSTRUCTION_PARAMETER;
         return;
     }
   }
 
   // Destination is an 8 bit register.
-  if (instr->param1_ >= PARA_REG_A && instr->param1_ <= PARA_REG_L) {
-    *ReadReg(cpu, instr->param1_) = source;
+  if (instr->param1 >= PARA_REG_A && instr->param1 <= PARA_REG_L) {
+    *ReadReg(cpu, instr->param1) = source;
   }
   // Destination is a 16 bit register.
-  if (instr->param1_ >= PARA_REG_BC && instr->param1_ <= PARA_REG_HL) {
-    WriteReg16(cpu, instr->param1_, source_16);
+  if (instr->param1 >= PARA_REG_BC && instr->param1 <= PARA_REG_HL) {
+    WriteReg16(cpu, instr->param1, source_16);
   }
 }
 
 
 static void LoadSP(Cpu* const cpu, const Instruction* const instr) {
-  switch(instr->param2_) {
+  switch(instr->param2) {
     case PARA_IMM_16:
-      cpu->sp_ = ReadImm16(cpu);
+      cpu->sp = ReadImm16(cpu);
       break;
     case PARA_REG_HL:
-      cpu->sp_ = ReadReg16(cpu, PARA_REG_HL);
+      cpu->sp = ReadReg16(cpu, PARA_REG_HL);
       break;
     default:
-      cpu->global_ctx_->error = ILLEGAL_INSTRUCTION_PARAMETER;
+      cpu->global_ctx->error = ILLEGAL_INSTRUCTION_PARAMETER;
       return;
   }
 }
@@ -318,43 +342,43 @@ static void LoadMem(Cpu* const cpu, const Instruction* const instr) {
   uint16_t source_16 = 0;
   uint16_t reg_hl = 0;
 
-  if (instr->param2_ >= PARA_REG_A && instr->param2_ <= PARA_REG_L) {
-    source = *ReadReg(cpu, instr->param2_);
+  if (instr->param2 >= PARA_REG_A && instr->param2 <= PARA_REG_L) {
+    source = *ReadReg(cpu, instr->param2);
   }
   else {
-    switch(instr->param2_) {
+    switch(instr->param2) {
       case PARA_SP:
-        source_16 = cpu->sp_;
+        source_16 = cpu->sp ;
         break;
       case PARA_IMM_8:
-        source = BusRead(cpu->bus_, cpu->pc_++);
+        source = BusRead(cpu->bus, cpu->pc++);
         break;
       default:
-        cpu->global_ctx_->error = ILLEGAL_INSTRUCTION_PARAMETER;
+        cpu->global_ctx->error = ILLEGAL_INSTRUCTION_PARAMETER;
         return;
     }
   }
 
-  if (instr->param1_ >= PARA_MEM_REG_BC && instr->param1_ <= PARA_MEM_REG_HL) {
-    BusWrite(cpu->bus_, ReadReg16(cpu, instr->param1_), source);
+  if (instr->param1 >= PARA_MEM_REG_BC && instr->param1 <= PARA_MEM_REG_HL) {
+    BusWrite(cpu->bus, ReadReg16(cpu, instr->param1), source);
   }
   else {
-    switch (instr->param1_) {
+    switch (instr->param1) {
       case PARA_MEM_REG_HL_INC:
         reg_hl = ReadReg16(cpu, PARA_REG_HL);
-        BusWrite(cpu->bus_, reg_hl, source);
+        BusWrite(cpu->bus, reg_hl, source);
         WriteReg16(cpu, PARA_REG_HL, reg_hl + 1);
         break;
       case PARA_MEM_REG_HL_DEC:
         reg_hl = ReadReg16(cpu, PARA_REG_HL);
-        BusWrite(cpu->bus_, reg_hl, source);
+        BusWrite(cpu->bus, reg_hl, source);
         WriteReg16(cpu, PARA_REG_HL, reg_hl - 1);
         break;
       case PARA_ADDR:
         WriteImm16(cpu, ReadImm16(cpu), source_16);
         break;
       default:
-        cpu->global_ctx_->error = ILLEGAL_INSTRUCTION_PARAMETER;
+        cpu->global_ctx->error = ILLEGAL_INSTRUCTION_PARAMETER;
         return;
     }
   }
@@ -362,7 +386,7 @@ static void LoadMem(Cpu* const cpu, const Instruction* const instr) {
 
 
 static void Load(Cpu* const cpu, const Instruction* const instr) {
-  InstructionParameter destination = instr->param1_;
+  InstructionParameter destination = instr->param1 ;
   if (destination < 12) {
     // destination is a register.
     LoadReg(cpu, instr);
@@ -382,34 +406,34 @@ static void LoadH(Cpu* const cpu, const Instruction* const instr) {
   uint8_t source = 0;
   uint8_t dest = 0;
 
-  switch(instr->param2_) {
+  switch(instr->param2) {
     case PARA_REG_A:
-      source = cpu->regs_.a_;
+      source = cpu->regs.a ;
       break;
     case PARA_MEM_REG_C:
-      source = BusRead(cpu->bus_, 0xFF00 + (uint16_t)cpu->regs_.c_);
+      source = BusRead(cpu->bus, 0xFF00 + (uint16_t)cpu->regs.c);
       break;
     case PARA_IMM_8:
-      source = BusRead(cpu->bus_, cpu->pc_++);
+      source = BusRead(cpu->bus, cpu->pc++);
       break;
     default:
-      cpu->global_ctx_->error = ILLEGAL_INSTRUCTION_PARAMETER;
+      cpu->global_ctx->error = ILLEGAL_INSTRUCTION_PARAMETER;
       return;
   }
 
-  switch(instr->param1_) {
+  switch(instr->param1) {
     case PARA_REG_A:
-      cpu->regs_.a_ = source;
+      cpu->regs.a = source;
       break;
     case PARA_MEM_REG_C:
-      BusWrite(cpu->bus_, 0xFF00 + (uint16_t)cpu->regs_.c_, source);
+      BusWrite(cpu->bus, 0xFF00 + (uint16_t)cpu->regs.c, source);
       break;
     case PARA_IMM_8:
-      dest = BusRead(cpu->bus_, cpu->pc_++);
-      BusWrite(cpu->bus_, 0xFF00 + (uint16_t)dest, source);
+      dest = BusRead(cpu->bus, cpu->pc++);
+      BusWrite(cpu->bus, 0xFF00 + (uint16_t)dest, source);
       break;
     default:
-      cpu->global_ctx_->error = ILLEGAL_INSTRUCTION_PARAMETER;
+      cpu->global_ctx->error = ILLEGAL_INSTRUCTION_PARAMETER;
       return;
   }
 }
@@ -420,34 +444,34 @@ static void Increment(Cpu* const cpu, const Instruction* const instr) {
   int is_8_bit = 0;
   uint16_t reg_hl = 0;
 
-  if (instr->param1_ >= PARA_REG_A && instr->param1_ <= PARA_REG_L) {
-    result = ++(*ReadReg(cpu, instr->param1_));
+  if (instr->param1 >= PARA_REG_A && instr->param1 <= PARA_REG_L) {
+    result = ++(*ReadReg(cpu, instr->param1));
     is_8_bit = 1;
   }
-  else if (instr->param1_ >= PARA_REG_BC && instr->param1_ <= PARA_REG_HL) {
+  else if (instr->param1 >= PARA_REG_BC && instr->param1 <= PARA_REG_HL) {
     WriteReg16(cpu, PARA_REG_BC, ReadReg16(cpu, PARA_REG_BC) + 1);
   }
   else {
-    switch(instr->param1_) {
+    switch(instr->param1) {
       case PARA_SP:
-        ++cpu->sp_;
+        ++cpu->sp ;
         break;
       case PARA_MEM_REG_HL:
         reg_hl = ReadReg16(cpu, PARA_REG_HL);
-        result = BusRead(cpu->bus_, reg_hl);
-        BusWrite(cpu->bus_, reg_hl, ++result);
+        result = BusRead(cpu->bus, reg_hl);
+        BusWrite(cpu->bus, reg_hl, ++result);
         is_8_bit = 1;
         break;
       default:
-        cpu->global_ctx_->error = ILLEGAL_INSTRUCTION_PARAMETER;
+        cpu->global_ctx->error = ILLEGAL_INSTRUCTION_PARAMETER;
         return;
     }
   }
 
   if (is_8_bit) {
-    cpu->flags_[FLAG_ADD_SUB] = 0;
-    cpu->flags_[FLAG_ZERO] = (result == 0);
-    cpu->flags_[FLAG_HALF_CARRY] = (result & 0x0F) == 0x00;
+    cpu->flags[FLAG_ADD_SUB] = 0;
+    cpu->flags[FLAG_ZERO] = (result == 0);
+    cpu->flags[FLAG_HALF_CARRY] = (result & 0x0F) == 0x00;
     UpdateFlagsRegister(cpu);
   }
 }
@@ -458,63 +482,63 @@ static void Decrement(Cpu* const cpu, const Instruction* const instr) {
   int is_8_bit = 0;
   uint16_t reg_hl = 0;
 
-  if (instr->param1_ >= PARA_REG_A && instr->param1_ <= PARA_REG_L) {
-    result = --(*ReadReg(cpu, instr->param1_));
+  if (instr->param1 >= PARA_REG_A && instr->param1 <= PARA_REG_L) {
+    result = --(*ReadReg(cpu, instr->param1));
     is_8_bit = 1;
   }
-  else if (instr->param1_ >= PARA_REG_BC && instr->param1_ <= PARA_REG_HL) {
+  else if (instr->param1 >= PARA_REG_BC && instr->param1 <= PARA_REG_HL) {
     WriteReg16(cpu, PARA_REG_BC, ReadReg16(cpu, PARA_REG_BC) - 1);
   }
   else {
-    switch(instr->param1_) {
+    switch(instr->param1) {
       case PARA_SP:
-        --cpu->sp_;
+        --cpu->sp ;
         break;
       case PARA_MEM_REG_HL:
         reg_hl = ReadReg16(cpu, PARA_REG_HL);
-        result = BusRead(cpu->bus_, reg_hl);
-        BusWrite(cpu->bus_, reg_hl, --result);
+        result = BusRead(cpu->bus, reg_hl);
+        BusWrite(cpu->bus, reg_hl, --result);
         is_8_bit = 1;
         break;
       default:
-        cpu->global_ctx_->error = ILLEGAL_INSTRUCTION_PARAMETER;
+        cpu->global_ctx->error = ILLEGAL_INSTRUCTION_PARAMETER;
         return;
     }
   }
 
   if (is_8_bit) {
-    cpu->flags_[FLAG_ADD_SUB] = 1;
-    cpu->flags_[FLAG_ZERO] = (result == 0);
-    cpu->flags_[FLAG_HALF_CARRY] = (result & 0x0F) == 0x0F;
+    cpu->flags[FLAG_ADD_SUB] = 1;
+    cpu->flags[FLAG_ZERO] = (result == 0);
+    cpu->flags[FLAG_HALF_CARRY] = (result & 0x0F) == 0x0F;
     UpdateFlagsRegister(cpu);
   }
 }
 
 
 static void StackPush(Cpu* const cpu, const Instruction* const instr) {
-  uint16_t source = ReadReg16(cpu, instr->param1_);
+  uint16_t source = ReadReg16(cpu, instr->param1);
   uint8_t hi = MostSigByte_(source);
   uint8_t lo = LeastSigByte_(source);
 
   // The stack grows up, as in the address decreases as things are added
   // to the stack. This is why WriteImm16() cannot be used.
-  BusWrite(cpu->bus_, --cpu->sp_, hi);
-  BusWrite(cpu->bus_, --cpu->sp_, lo);
+  BusWrite(cpu->bus, --cpu->sp, hi);
+  BusWrite(cpu->bus, --cpu->sp, lo);
 }
 
 
 static void StackPop(Cpu* const cpu, const Instruction* const instr) {
-  uint16_t lo = (uint16_t)BusRead(cpu->bus_, cpu->sp_++);
-  uint16_t hi = (uint16_t)BusRead(cpu->bus_, cpu->sp_++);
+  uint16_t lo = (uint16_t)BusRead(cpu->bus, cpu->sp++);
+  uint16_t hi = (uint16_t)BusRead(cpu->bus, cpu->sp++);
   uint16_t source = CombineBytes_(hi, lo);
 
-  WriteReg16(cpu, instr->param1_, source);
+  WriteReg16(cpu, instr->param1, source);
 }
 
 
-static void Jump(Cpu* const cpu, const Instruction* const instr) {
-  if (instr->param1_ == PARA_REG_HL) {
-    cpu->pc_ = ReadReg16(cpu, PARA_REG_HL);
+static void Jump(Cpu* const cpu, Instruction* const instr) {
+  if (instr->param1 == PARA_REG_HL) {
+    cpu->pc = ReadReg16(cpu, PARA_REG_HL);
     return;
   }
 
@@ -523,220 +547,220 @@ static void Jump(Cpu* const cpu, const Instruction* const instr) {
   uint16_t jmp_addr = ReadImm16(cpu);
   int condition = 0;
 
-  switch(instr->cond_) {
+  switch(instr->cond) {
     case COND_NONE:
       condition = 1;
       break;
     case COND_NZ:
-      condition = !cpu->flags_[FLAG_ZERO];
+      condition = !cpu->flags[FLAG_ZERO];
       break;
     case COND_Z:
-      condition = cpu->flags_[FLAG_ZERO];
+      condition = cpu->flags[FLAG_ZERO];
       break;
     case COND_NC:
-      condition = !cpu->flags_[FLAG_CARRY];
+      condition = !cpu->flags[FLAG_CARRY];
       break;
     case COND_C:
-      condition = cpu->flags_[FLAG_CARRY];
+      condition = cpu->flags[FLAG_CARRY];
       break;
     default:
-      cpu->global_ctx_->error = ILLEGAL_INSTRUCTION_PARAMETER;
+      cpu->global_ctx->error = ILLEGAL_INSTRUCTION_PARAMETER;
       return;
   }
 
   if (condition) {
-    cpu->pc_ = jmp_addr;
-    if (instr->cond_ != COND_NONE) {
-      cpu->global_ctx_->clock += 4;
+    cpu->pc = jmp_addr;
+    if (instr->cond != COND_NONE) {
+      instr->cycles += 4;
     }
   }
 }
 
 
-static void RelativeJump(Cpu* const cpu, const Instruction* const instr) {
-  int8_t offset = (int8_t)BusRead(cpu->bus_, cpu->pc_++);
-  uint16_t jmp_addr = (uint16_t)((int16_t)cpu->pc_ + (int16_t)offset);
+static void RelativeJump(Cpu* const cpu, Instruction* const instr) {
+  int8_t offset = (int8_t)BusRead(cpu->bus, cpu->pc++);
+  uint16_t jmp_addr = (uint16_t)((int16_t)cpu->pc + (int16_t)offset);
   int condition = 0;
 
-  switch(instr->cond_) {
+  switch(instr->cond) {
     case COND_NONE:
       condition = 1;
       break;
     case COND_NZ:
-      condition = !cpu->flags_[FLAG_ZERO];
+      condition = !cpu->flags[FLAG_ZERO];
       break;
     case COND_Z:
-      condition = cpu->flags_[FLAG_ZERO];
+      condition = cpu->flags[FLAG_ZERO];
       break;
     case COND_NC:
-      condition = !cpu->flags_[FLAG_CARRY];
+      condition = !cpu->flags[FLAG_CARRY];
       break;
     case COND_C:
-      condition = cpu->flags_[FLAG_CARRY];
+      condition = cpu->flags[FLAG_CARRY];
       break;
   }
 
   if (condition) {
-    cpu->pc_ = jmp_addr;
-    if (instr->cond_ != COND_NONE) {
-      cpu->global_ctx_->clock += 4;
+    cpu->pc = jmp_addr;
+    if (instr->cond != COND_NONE) {
+      instr->cycles += 4;
     }
   }
 }
 
 
-static void Call(Cpu* const cpu, const Instruction* const instr) {
+static void Call(Cpu* const cpu, Instruction* const instr) {
   uint16_t call_addr = ReadImm16(cpu);
   int condition = 0;
 
-  switch(instr->cond_) {
+  switch(instr->cond) {
     case COND_NONE:
       condition = 1;
       break;
     case COND_NZ:
-      condition = !cpu->flags_[FLAG_ZERO];
+      condition = !cpu->flags[FLAG_ZERO];
       break;
     case COND_Z:
-      condition = cpu->flags_[FLAG_ZERO];
+      condition = cpu->flags[FLAG_ZERO];
       break;
     case COND_NC:
-      condition = !cpu->flags_[FLAG_CARRY];
+      condition = !cpu->flags[FLAG_CARRY];
       break;
     case COND_C:
-      condition = cpu->flags_[FLAG_CARRY];
+      condition = cpu->flags[FLAG_CARRY];
       break;
   }
 
   if (condition) {
-    uint8_t hi = MostSigByte_(cpu->pc_);
-    uint8_t lo = LeastSigByte_(cpu->pc_);
-    BusWrite(cpu->bus_, --cpu->sp_, hi);
-    BusWrite(cpu->bus_, --cpu->sp_, lo);
-    cpu->pc_ = call_addr;
-    if (instr->cond_ != COND_NONE) {
-      cpu->global_ctx_->clock += 12;
+    uint8_t hi = MostSigByte_(cpu->pc);
+    uint8_t lo = LeastSigByte_(cpu->pc);
+    BusWrite(cpu->bus, --cpu->sp, hi);
+    BusWrite(cpu->bus, --cpu->sp, lo);
+    cpu->pc = call_addr;
+    if (instr->cond != COND_NONE) {
+      instr->cycles += 12;
     }
   }
 }
 
 
-static void Return(Cpu* const cpu, const Instruction* const instr) {
+static void Return(Cpu* const cpu, Instruction* const instr) {
   int condition = 0;
 
-  switch(instr->cond_) {
+  switch(instr->cond) {
     case COND_NONE:
       condition = 1;
       break;
     case COND_NZ:
-      condition = !cpu->flags_[FLAG_ZERO];
+      condition = !cpu->flags[FLAG_ZERO];
       break;
     case COND_Z:
-      condition = cpu->flags_[FLAG_ZERO];
+      condition = cpu->flags[FLAG_ZERO];
       break;
     case COND_NC:
-      condition = !cpu->flags_[FLAG_CARRY];
+      condition = !cpu->flags[FLAG_CARRY];
       break;
     case COND_C:
-      condition = cpu->flags_[FLAG_CARRY];
+      condition = cpu->flags[FLAG_CARRY];
       break;
   }
 
   if (condition) {
-    uint16_t lo = (uint16_t)BusRead(cpu->bus_, cpu->sp_++);
-    uint16_t hi = (uint16_t)BusRead(cpu->bus_, cpu->sp_++);
-    cpu->pc_ = CombineBytes_(hi, lo);
-    if (instr->cond_ != COND_NONE) {
-      cpu->global_ctx_->clock += 12;
+    uint16_t lo = (uint16_t)BusRead(cpu->bus, cpu->sp++);
+    uint16_t hi = (uint16_t)BusRead(cpu->bus, cpu->sp++);
+    cpu->pc = CombineBytes_(hi, lo);
+    if (instr->cond != COND_NONE) {
+      instr->cycles += 12;
     }
   }
 }
 
 
 static void Restart(Cpu* const cpu, const Instruction* const instr) {
-  uint8_t target = (instr->raw_instr_ & 0x38) >> 3;
+  uint8_t target = (instr->raw_instr & 0x38) >> 3;
   target *= 8;
 
-  uint8_t hi = MostSigByte_(cpu->pc_);
-  uint8_t lo = LeastSigByte_(cpu->pc_);
-  BusWrite(cpu->bus_, --cpu->sp_, hi);
-  BusWrite(cpu->bus_, --cpu->sp_, lo);
-  cpu->pc_ = (uint16_t)target;
+  uint8_t hi = MostSigByte_(cpu->pc);
+  uint8_t lo = LeastSigByte_(cpu->pc);
+  BusWrite(cpu->bus, --cpu->sp, hi);
+  BusWrite(cpu->bus, --cpu->sp, lo);
+  cpu->pc = (uint16_t)target;
 }
 
 
 static void Add(Cpu* const cpu, const Instruction* const instr, int carry) {
   uint32_t initial = 0;
 
-  switch(instr->param1_) {
+  switch(instr->param1) {
     case PARA_REG_A:
-      initial = (uint32_t)cpu->regs_.a_;
-      if (instr->param2_ == PARA_MEM_REG_HL) {
-        cpu->regs_.a_ += BusRead(cpu->bus_, ReadReg16(cpu, PARA_REG_HL));
+      initial = (uint32_t)cpu->regs.a ;
+      if (instr->param2 == PARA_MEM_REG_HL) {
+        cpu->regs.a += BusRead(cpu->bus, ReadReg16(cpu, PARA_REG_HL));
       }
-      else if (instr->param2_ == PARA_IMM_8) {
-        cpu->regs_.a_ += BusRead(cpu->bus_, cpu->pc_++);
+      else if (instr->param2 == PARA_IMM_8) {
+        cpu->regs.a += BusRead(cpu->bus, cpu->pc++);
       }
       else {
-        cpu->regs_.a_ += *ReadReg(cpu, instr->param2_);
+        cpu->regs.a += *ReadReg(cpu, instr->param2);
       }
       if (carry) {
-        cpu->regs_.a_ += cpu->flags_[FLAG_CARRY];
+        cpu->regs.a += cpu->flags[FLAG_CARRY];
       }
-      cpu->flags_[FLAG_ZERO] = cpu->regs_.a_ == 0;
-      cpu->flags_[FLAG_CARRY] = cpu->regs_.a_ < initial;
-      cpu->flags_[FLAG_HALF_CARRY] = (cpu->regs_.a_ & 0x0F) > 0x0F;
+      cpu->flags[FLAG_ZERO] = cpu->regs.a == 0;
+      cpu->flags[FLAG_CARRY] = cpu->regs.a < initial;
+      cpu->flags[FLAG_HALF_CARRY] = (cpu->regs.a & 0x0F) > 0x0F;
       break;
 
     case PARA_REG_HL:
       initial = (uint32_t)ReadReg16(cpu, PARA_REG_HL) +
-                (uint32_t)ReadReg16(cpu, instr->param2_);
+                (uint32_t)ReadReg16(cpu, instr->param2);
       WriteReg16(cpu, PARA_REG_HL, (uint16_t)initial);
 
-      cpu->flags_[FLAG_CARRY] = initial > 0xFFFF;
-      cpu->flags_[FLAG_HALF_CARRY] = (initial & 0x0F) > 0x0F;
+      cpu->flags[FLAG_CARRY] = initial > 0xFFFF;
+      cpu->flags[FLAG_HALF_CARRY] = (initial & 0x0F) > 0x0F;
       break;
 
     case PARA_SP:
-      initial = (uint32_t)((int16_t)cpu->sp_ + (int8_t)BusRead(cpu->bus_,
-                                                                cpu->pc_++));
-      cpu->sp_ = (uint16_t)initial;
-      cpu->flags_[FLAG_ZERO] = 0;
-      cpu->flags_[FLAG_CARRY] = initial > 0xFFFF;
-      cpu->flags_[FLAG_HALF_CARRY] = (initial & 0x0F) > 0x0F;
+      initial = (uint32_t)((int16_t)cpu->sp + (int8_t)BusRead(cpu->bus,
+                                                                cpu->pc++));
+      cpu->sp = (uint16_t)initial;
+      cpu->flags[FLAG_ZERO] = 0;
+      cpu->flags[FLAG_CARRY] = initial > 0xFFFF;
+      cpu->flags[FLAG_HALF_CARRY] = (initial & 0x0F) > 0x0F;
       break;
 
     default:
-      cpu->global_ctx_->error = ILLEGAL_INSTRUCTION_PARAMETER;
+      cpu->global_ctx->error = ILLEGAL_INSTRUCTION_PARAMETER;
       return;
   }
-  cpu->flags_[FLAG_ADD_SUB] = 0;
+  cpu->flags[FLAG_ADD_SUB] = 0;
   UpdateFlagsRegister(cpu);
 }
 
 
 static void Subtract(Cpu* const cpu, const Instruction* const instr,
                      int carry) {
-  uint8_t initial = cpu->regs_.a_;
+  uint8_t initial = cpu->regs.a ;
 
-  if (instr->param2_ >= PARA_REG_A && instr->param2_ <= PARA_REG_L) {
-    cpu->regs_.a_ -= *ReadReg(cpu, instr->param2_);
+  if (instr->param2 >= PARA_REG_A && instr->param2 <= PARA_REG_L) {
+    cpu->regs.a -= *ReadReg(cpu, instr->param2);
   }
-  else if (instr->param2_ == PARA_MEM_REG_HL) {
-    cpu->regs_.a_ -= BusRead(cpu->bus_, ReadReg16(cpu, PARA_MEM_REG_HL));
+  else if (instr->param2 == PARA_MEM_REG_HL) {
+    cpu->regs.a -= BusRead(cpu->bus, ReadReg16(cpu, PARA_MEM_REG_HL));
   }
-  else if (instr->param2_ == PARA_IMM_8) {
-    cpu->regs_.a_ -= BusRead(cpu->bus_, cpu->pc_++);
+  else if (instr->param2 == PARA_IMM_8) {
+    cpu->regs.a -= BusRead(cpu->bus, cpu->pc++);
   }
   if (carry) {
-    cpu->regs_.a_ -= cpu->flags_[FLAG_CARRY];
+    cpu->regs.a -= cpu->flags[FLAG_CARRY];
   }
 
-  cpu->flags_[FLAG_ZERO] = cpu->regs_.a_ == 0;
-  cpu->flags_[FLAG_ADD_SUB] = 1;
-  cpu->flags_[FLAG_CARRY] = (instr->param2_ == PARA_REG_A) && carry
-                            ? cpu->flags_[FLAG_CARRY]
-                            : (initial < cpu->regs_.a_);
-  cpu->flags_[FLAG_HALF_CARRY] = (cpu->regs_.a_ & 0x0F) == 0x0F;
+  cpu->flags[FLAG_ZERO] = cpu->regs.a == 0;
+  cpu->flags[FLAG_ADD_SUB] = 1;
+  cpu->flags[FLAG_CARRY] = (instr->param2 == PARA_REG_A) && carry
+                            ? cpu->flags[FLAG_CARRY]
+                            : (initial < cpu->regs.a);
+  cpu->flags[FLAG_HALF_CARRY] = (cpu->regs.a & 0x0F) == 0x0F;
   UpdateFlagsRegister(cpu);
 }
 
@@ -747,8 +771,8 @@ static void Subtract(Cpu* const cpu, const Instruction* const instr,
 // "Gameboy Emulator Development - Part 09" by Low Level Devel.
 static void DecimalAdjustAccumulator(Cpu* const cpu) {
   /*
-  uint8_t hi = (cpu->regs_.a_ & 0xF0) >> 4;
-  uint8_t lo = (cpu->regs_.a_ & 0x0F);
+  uint8_t hi = (cpu->regs.a & 0xF0) >> 4;
+  uint8_t lo = (cpu->regs.a & 0x0F);
 
   if (hi > 9) {
     hi = 9;
@@ -756,86 +780,86 @@ static void DecimalAdjustAccumulator(Cpu* const cpu) {
   if (lo > 9) {
     lo = 9;
   }
-  cpu->regs_.a_ = (hi * 10) + lo;
+  cpu->regs.a = (hi * 10) + lo;
 
-  cpu->flags_[FLAG_ZERO] = cpu->regs_.a_ == 0;
-  cpu->flags_[FLAG_HALF_CARRY] = 0;
-  cpu->flags_[FLAG_CARRY] = (cpu->regs_.a_ & 0x0F) > 0x0F;
+  cpu->flags[FLAG_ZERO] = cpu->regs.a == 0;
+  cpu->flags[FLAG_HALF_CARRY] = 0;
+  cpu->flags[FLAG_CARRY] = (cpu->regs.a & 0x0F) > 0x0F;
   */
   uint8_t u = 0;
   uint8_t carry_flag = 0;
 
-  if (cpu->flags_[FLAG_HALF_CARRY] || (!cpu->flags_[FLAG_ADD_SUB] &&
-                                      ((cpu->regs_.a_ & 0x0F) > 9))) {
+  if (cpu->flags[FLAG_HALF_CARRY] || (!cpu->flags[FLAG_ADD_SUB] &&
+                                      ((cpu->regs.a & 0x0F) > 9))) {
     u = 6;
   }
-  if (cpu->flags_[FLAG_CARRY] || (!cpu->flags_[FLAG_ADD_SUB] &&
-                                  (cpu->regs_.a_ > 0x99))) {
+  if (cpu->flags[FLAG_CARRY] || (!cpu->flags[FLAG_ADD_SUB] &&
+                                  (cpu->regs.a > 0x99))) {
     u |= 0x60;
     carry_flag = 1;
   }
-  cpu->regs_.a_ += cpu->flags_[FLAG_ADD_SUB] ? -u : u;
+  cpu->regs.a += cpu->flags[FLAG_ADD_SUB] ? -u : u;
 
-  cpu->flags_[FLAG_ZERO] = cpu->regs_.a_ == 0;
-  cpu->flags_[FLAG_HALF_CARRY] = 0;
-  cpu->flags_[FLAG_CARRY] = carry_flag;
+  cpu->flags[FLAG_ZERO] = cpu->regs.a == 0;
+  cpu->flags[FLAG_HALF_CARRY] = 0;
+  cpu->flags[FLAG_CARRY] = carry_flag;
   UpdateFlagsRegister(cpu);
 }
 
 
 static void BitwiseAnd(Cpu* const cpu, const Instruction* const instr) {
-  if (instr->param2_ >= PARA_REG_A && instr->param2_ <= PARA_REG_L) {
-    cpu->regs_.a_ &= *ReadReg(cpu, instr->param2_);
+  if (instr->param2 >= PARA_REG_A && instr->param2 <= PARA_REG_L) {
+    cpu->regs.a &= *ReadReg(cpu, instr->param2);
   }
-  else if (instr->param2_ == PARA_MEM_REG_HL) {
-    cpu->regs_.a_ &= BusRead(cpu->bus_, ReadReg16(cpu, PARA_MEM_REG_HL));
+  else if (instr->param2 == PARA_MEM_REG_HL) {
+    cpu->regs.a &= BusRead(cpu->bus, ReadReg16(cpu, PARA_MEM_REG_HL));
   }
-  else if (instr->param2_ == PARA_IMM_8) {
-    cpu->regs_.a_ &= BusRead(cpu->bus_, cpu->pc_++);
+  else if (instr->param2 == PARA_IMM_8) {
+    cpu->regs.a &= BusRead(cpu->bus, cpu->pc++);
   }
 
-  cpu->flags_[FLAG_ZERO] = cpu->regs_.a_ == 0;
-  cpu->flags_[FLAG_ADD_SUB] = 0;
-  cpu->flags_[FLAG_CARRY] = 0;
-  cpu->flags_[FLAG_HALF_CARRY] = 1;
+  cpu->flags[FLAG_ZERO] = cpu->regs.a == 0;
+  cpu->flags[FLAG_ADD_SUB] = 0;
+  cpu->flags[FLAG_CARRY] = 0;
+  cpu->flags[FLAG_HALF_CARRY] = 1;
   UpdateFlagsRegister(cpu);
 }
 
 
 static void BitwiseOr(Cpu* const cpu, const Instruction* const instr) {
-  if (instr->param2_ >= PARA_REG_A && instr->param2_ <= PARA_REG_L) {
-    cpu->regs_.a_ |= *ReadReg(cpu, instr->param2_);
+  if (instr->param2 >= PARA_REG_A && instr->param2 <= PARA_REG_L) {
+    cpu->regs.a |= *ReadReg(cpu, instr->param2);
   }
-  else if (instr->param2_ == PARA_MEM_REG_HL) {
-    cpu->regs_.a_ |= BusRead(cpu->bus_, ReadReg16(cpu, PARA_MEM_REG_HL));
+  else if (instr->param2 == PARA_MEM_REG_HL) {
+    cpu->regs.a |= BusRead(cpu->bus, ReadReg16(cpu, PARA_MEM_REG_HL));
   }
-  else if (instr->param2_ == PARA_IMM_8) {
-    cpu->regs_.a_ |= BusRead(cpu->bus_, cpu->pc_++);
+  else if (instr->param2 == PARA_IMM_8) {
+    cpu->regs.a |= BusRead(cpu->bus, cpu->pc++);
   }
 
-  cpu->flags_[FLAG_ZERO] = cpu->regs_.a_ == 0;
-  cpu->flags_[FLAG_ADD_SUB] = 0;
-  cpu->flags_[FLAG_CARRY] = 0;
-  cpu->flags_[FLAG_HALF_CARRY] = 0;
+  cpu->flags[FLAG_ZERO] = cpu->regs.a == 0;
+  cpu->flags[FLAG_ADD_SUB] = 0;
+  cpu->flags[FLAG_CARRY] = 0;
+  cpu->flags[FLAG_HALF_CARRY] = 0;
   UpdateFlagsRegister(cpu);
 }
 
 
 static void BitwisXor(Cpu* const cpu, const Instruction* const instr) {
-  if (instr->param2_ >= PARA_REG_A && instr->param2_ <= PARA_REG_L) {
-    cpu->regs_.a_ ^= *ReadReg(cpu, instr->param2_);
+  if (instr->param2 >= PARA_REG_A && instr->param2 <= PARA_REG_L) {
+    cpu->regs.a ^= *ReadReg(cpu, instr->param2);
   }
-  else if (instr->param2_ == PARA_MEM_REG_HL) {
-    cpu->regs_.a_ ^= BusRead(cpu->bus_, ReadReg16(cpu, PARA_MEM_REG_HL));
+  else if (instr->param2 == PARA_MEM_REG_HL) {
+    cpu->regs.a ^= BusRead(cpu->bus, ReadReg16(cpu, PARA_MEM_REG_HL));
   }
-  else if (instr->param2_ == PARA_IMM_8) {
-    cpu->regs_.a_ ^= BusRead(cpu->bus_, cpu->pc_++);
+  else if (instr->param2 == PARA_IMM_8) {
+    cpu->regs.a ^= BusRead(cpu->bus, cpu->pc++);
   }
 
-  cpu->flags_[FLAG_ZERO] = cpu->regs_.a_ == 0;
-  cpu->flags_[FLAG_ADD_SUB] = 0;
-  cpu->flags_[FLAG_CARRY] = 0;
-  cpu->flags_[FLAG_HALF_CARRY] = 0;
+  cpu->flags[FLAG_ZERO] = cpu->regs.a == 0;
+  cpu->flags[FLAG_ADD_SUB] = 0;
+  cpu->flags[FLAG_CARRY] = 0;
+  cpu->flags[FLAG_HALF_CARRY] = 0;
   UpdateFlagsRegister(cpu);
 }
 
@@ -843,73 +867,73 @@ static void BitwisXor(Cpu* const cpu, const Instruction* const instr) {
 static void Rotate(Cpu* const cpu, const Instruction* const instr,
                    ShiftDirection direction, int carry) {
   if (direction == LEFT) {
-    if (instr->param1_ == PARA_NONE) {
+    if (instr->param1 == PARA_NONE) {
       // RL(C)A
-      uint8_t msb = cpu->regs_.a_ & 0x80;
-      uint8_t lsb = carry ? cpu->flags_[FLAG_CARRY] : msb;
-      cpu->regs_.a_ <<= 1;
-      cpu->regs_.a_ |= lsb;
-      cpu->flags_[FLAG_CARRY] = msb;
-      cpu->flags_[FLAG_ZERO] = 0;
+      uint8_t msb = cpu->regs.a & 0x80;
+      uint8_t lsb = carry ? cpu->flags[FLAG_CARRY] : msb;
+      cpu->regs.a <<= 1;
+      cpu->regs.a |= lsb;
+      cpu->flags[FLAG_CARRY] = msb;
+      cpu->flags[FLAG_ZERO] = 0;
     }
-    else if (instr->param1_ >= PARA_REG_A && instr->param1_ <= PARA_REG_L) {
+    else if (instr->param1 >= PARA_REG_A && instr->param1 <= PARA_REG_L) {
       // RL(C) r8
-      uint8_t* reg = ReadReg(cpu, instr->param1_);
+      uint8_t* reg = ReadReg(cpu, instr->param1);
       uint8_t msb = *reg & 0x80;
-      uint8_t lsb = carry ? cpu->flags_[FLAG_CARRY] : msb;
+      uint8_t lsb = carry ? cpu->flags[FLAG_CARRY] : msb;
       *reg <<= 1;
       *reg |= lsb;
-      cpu->flags_[FLAG_CARRY] = msb;
-      cpu->flags_[FLAG_ZERO] = *reg == 0;
+      cpu->flags[FLAG_CARRY] = msb;
+      cpu->flags[FLAG_ZERO] = *reg == 0;
     }
-    else if (instr->param1_ == PARA_MEM_REG_HL) {
+    else if (instr->param1 == PARA_MEM_REG_HL) {
       // RL(C) [HL]
       uint16_t reg_hl = ReadReg16(cpu, PARA_REG_HL);
-      uint8_t reg = BusRead(cpu->bus_, reg_hl);
+      uint8_t reg = BusRead(cpu->bus, reg_hl);
       uint8_t msb = reg & 0x80;
-      uint8_t lsb = carry ? cpu->flags_[FLAG_CARRY] : msb;
+      uint8_t lsb = carry ? cpu->flags[FLAG_CARRY] : msb;
       reg <<= 1;
       reg |= lsb;
-      cpu->flags_[FLAG_CARRY] = msb;
-      cpu->flags_[FLAG_ZERO] = reg == 0;
-      BusWrite(cpu->bus_, reg_hl, reg);
+      cpu->flags[FLAG_CARRY] = msb;
+      cpu->flags[FLAG_ZERO] = reg == 0;
+      BusWrite(cpu->bus, reg_hl, reg);
     }
   }
   else {
-    if (instr->param1_ == PARA_NONE) {
+    if (instr->param1 == PARA_NONE) {
       // RR(C)A
-      uint8_t lsb = cpu->regs_.a_ & 0x01;
-      uint8_t msb = carry ? cpu->flags_[FLAG_CARRY] : lsb;
-      cpu->regs_.a_ >>= 1;
-      cpu->regs_.a_ |= (msb << 7);
-      cpu->flags_[FLAG_CARRY] = lsb;
-      cpu->flags_[FLAG_ZERO] = 0;
+      uint8_t lsb = cpu->regs.a & 0x01;
+      uint8_t msb = carry ? cpu->flags[FLAG_CARRY] : lsb;
+      cpu->regs.a >>= 1;
+      cpu->regs.a |= (msb << 7);
+      cpu->flags[FLAG_CARRY] = lsb;
+      cpu->flags[FLAG_ZERO] = 0;
     }
-    else if (instr->param1_ >= PARA_REG_A && instr->param1_ <= PARA_REG_L) {
+    else if (instr->param1 >= PARA_REG_A && instr->param1 <= PARA_REG_L) {
       // RR(C) r8
-      uint8_t* reg = ReadReg(cpu, instr->param1_);
+      uint8_t* reg = ReadReg(cpu, instr->param1);
       uint8_t lsb = *reg & 0x01;
-      uint8_t msb = carry ? cpu->flags_[FLAG_CARRY] : lsb;
+      uint8_t msb = carry ? cpu->flags[FLAG_CARRY] : lsb;
       *reg >>= 1;
       *reg |= (msb << 7);
-      cpu->flags_[FLAG_CARRY] = lsb;
-      cpu->flags_[FLAG_ZERO] = *reg == 0;
+      cpu->flags[FLAG_CARRY] = lsb;
+      cpu->flags[FLAG_ZERO] = *reg == 0;
     }
-    else if (instr->param1_ == PARA_MEM_REG_HL) {
+    else if (instr->param1 == PARA_MEM_REG_HL) {
       // RR(C) [HL]
       uint16_t reg_hl = ReadReg16(cpu, PARA_REG_HL);
-      uint8_t reg = BusRead(cpu->bus_, reg_hl);
+      uint8_t reg = BusRead(cpu->bus, reg_hl);
       uint8_t lsb = reg & 0x01;
-      uint8_t msb = carry ? cpu->flags_[FLAG_CARRY] : lsb;
+      uint8_t msb = carry ? cpu->flags[FLAG_CARRY] : lsb;
       reg >>= 1;
       reg |= (msb << 7);
-      cpu->flags_[FLAG_CARRY] = lsb;
-      cpu->flags_[FLAG_ZERO] = reg == 0;
-      BusWrite(cpu->bus_, reg_hl, reg);
+      cpu->flags[FLAG_CARRY] = lsb;
+      cpu->flags[FLAG_ZERO] = reg == 0;
+      BusWrite(cpu->bus, reg_hl, reg);
     }
   }
-  cpu->flags_[FLAG_HALF_CARRY] = 0;
-  cpu->flags_[FLAG_ADD_SUB] = 0;
+  cpu->flags[FLAG_HALF_CARRY] = 0;
+  cpu->flags[FLAG_ADD_SUB] = 0;
   UpdateFlagsRegister(cpu);
 }
 
@@ -917,134 +941,134 @@ static void Rotate(Cpu* const cpu, const Instruction* const instr,
 static void Shift(Cpu* const cpu, const Instruction* const instr,
                   ShiftDirection direction, int logically) {
   if (direction == LEFT) {
-    if (instr->param1_ >= PARA_REG_A && instr->param1_ <= PARA_REG_L) {
+    if (instr->param1 >= PARA_REG_A && instr->param1 <= PARA_REG_L) {
       // SLA r8
-      uint8_t* reg = ReadReg(cpu, instr->param1_);
+      uint8_t* reg = ReadReg(cpu, instr->param1);
       uint8_t msb = *reg & 0x80;
       *reg <<= 1;
-      cpu->flags_[FLAG_CARRY] = msb;
-      cpu->flags_[FLAG_ZERO] = *reg == 0;
+      cpu->flags[FLAG_CARRY] = msb;
+      cpu->flags[FLAG_ZERO] = *reg == 0;
     }
-    else if (instr->param1_ == PARA_MEM_REG_HL) {
+    else if (instr->param1 == PARA_MEM_REG_HL) {
       // SLA [HL]
       uint16_t reg_hl = ReadReg16(cpu, PARA_REG_HL);
-      uint8_t reg = BusRead(cpu->bus_, reg_hl);
+      uint8_t reg = BusRead(cpu->bus, reg_hl);
       uint8_t msb = reg & 0x80;
       reg <<= 1;
-      cpu->flags_[FLAG_CARRY] = msb;
-      cpu->flags_[FLAG_ZERO] = reg == 0;
-      BusWrite(cpu->bus_, reg_hl, reg);
+      cpu->flags[FLAG_CARRY] = msb;
+      cpu->flags[FLAG_ZERO] = reg == 0;
+      BusWrite(cpu->bus, reg_hl, reg);
     }
   }
   else {
-    if (instr->param1_ >= PARA_REG_A && instr->param1_ <= PARA_REG_L) {
+    if (instr->param1 >= PARA_REG_A && instr->param1 <= PARA_REG_L) {
       // SR(A/L) r8
-      uint8_t* reg = ReadReg(cpu, instr->param1_);
+      uint8_t* reg = ReadReg(cpu, instr->param1);
       uint8_t msb = logically ? 0 : (*reg & 0x80);
       uint8_t lsb = *reg & 0x01;
       *reg >>= 1;
       *reg |= (msb << 7);
-      cpu->flags_[FLAG_CARRY] = lsb;
-      cpu->flags_[FLAG_ZERO] = *reg == 0;
+      cpu->flags[FLAG_CARRY] = lsb;
+      cpu->flags[FLAG_ZERO] = *reg == 0;
     }
-    else if (instr->param1_ == PARA_MEM_REG_HL) {
+    else if (instr->param1 == PARA_MEM_REG_HL) {
       // SR(A/L) [HL]
       uint16_t reg_hl = ReadReg16(cpu, PARA_REG_HL);
-      uint8_t reg = BusRead(cpu->bus_, reg_hl);
+      uint8_t reg = BusRead(cpu->bus, reg_hl);
       uint8_t msb = logically ? 0 : (reg & 0x80);
       uint8_t lsb = reg & 0x01;
       reg >>= 1;
       reg |= (msb << 7);
-      cpu->flags_[FLAG_CARRY] = lsb;
-      cpu->flags_[FLAG_ZERO] = reg == 0;
-      BusWrite(cpu->bus_, reg_hl, reg);
+      cpu->flags[FLAG_CARRY] = lsb;
+      cpu->flags[FLAG_ZERO] = reg == 0;
+      BusWrite(cpu->bus, reg_hl, reg);
     }
   }
-  cpu->flags_[FLAG_HALF_CARRY] = 0;
-  cpu->flags_[FLAG_ADD_SUB] = 0;
+  cpu->flags[FLAG_HALF_CARRY] = 0;
+  cpu->flags[FLAG_ADD_SUB] = 0;
   UpdateFlagsRegister(cpu);
 }
 
 
 static void Swap(Cpu* const cpu, const Instruction* const instr) {
-  if (instr->param1_ >= PARA_REG_A && instr->param1_ <= PARA_REG_L) {
-    uint8_t* reg = ReadReg(cpu, instr->param1_);
+  if (instr->param1 >= PARA_REG_A && instr->param1 <= PARA_REG_L) {
+    uint8_t* reg = ReadReg(cpu, instr->param1);
     uint8_t hi = (*reg & 0xF0) >> 4;
     *reg <<= 4;
     *reg |= hi;
 
-    cpu->flags_[FLAG_ZERO] = *reg == 0;
+    cpu->flags[FLAG_ZERO] = *reg == 0;
   }
-  else if (instr->param1_ == PARA_MEM_REG_HL) {
+  else if (instr->param1 == PARA_MEM_REG_HL) {
     uint16_t reg_hl = ReadReg16(cpu, PARA_REG_HL);
-    uint8_t reg = BusRead(cpu->bus_, reg_hl);
+    uint8_t reg = BusRead(cpu->bus, reg_hl);
     uint8_t hi = (reg & 0xF0) >> 4;
     reg <<= 4;
     reg |= hi;
-    BusWrite(cpu->bus_, reg_hl, reg);
+    BusWrite(cpu->bus, reg_hl, reg);
 
-    cpu->flags_[FLAG_ZERO] = reg == 0;
+    cpu->flags[FLAG_ZERO] = reg == 0;
   }
 
-  cpu->flags_[FLAG_ADD_SUB] = 0;
-  cpu->flags_[FLAG_CARRY] = 0;
-  cpu->flags_[FLAG_HALF_CARRY] = 0;
+  cpu->flags[FLAG_ADD_SUB] = 0;
+  cpu->flags[FLAG_CARRY] = 0;
+  cpu->flags[FLAG_HALF_CARRY] = 0;
   UpdateFlagsRegister(cpu);
 }
 
 
 static void Bit(Cpu* const cpu, const Instruction* const instr) {
-  uint8_t bit_idx = (instr->raw_instr_ & 0x38) >> 3;
+  uint8_t bit_idx = (instr->raw_instr & 0x38) >> 3;
 
-  if (instr->param2_ >= PARA_REG_A && instr->param2_ <= PARA_REG_L) {
-    uint8_t* reg = ReadReg(cpu, instr->param2_);
+  if (instr->param2 >= PARA_REG_A && instr->param2 <= PARA_REG_L) {
+    uint8_t* reg = ReadReg(cpu, instr->param2);
 
-    cpu->flags_[FLAG_ZERO] = (*reg & (1 << bit_idx)) >> bit_idx;
+    cpu->flags[FLAG_ZERO] = (*reg & (1 << bit_idx)) >> bit_idx;
   }
-  else if (instr->param2_ == PARA_MEM_REG_HL) {
-    uint8_t reg = BusRead(cpu->bus_, ReadReg16(cpu, PARA_REG_HL));
+  else if (instr->param2 == PARA_MEM_REG_HL) {
+    uint8_t reg = BusRead(cpu->bus, ReadReg16(cpu, PARA_REG_HL));
 
-    cpu->flags_[FLAG_ZERO] = (reg & (1 << bit_idx)) >> bit_idx;
+    cpu->flags[FLAG_ZERO] = (reg & (1 << bit_idx)) >> bit_idx;
   }
 
-  cpu->flags_[FLAG_ADD_SUB] = 0;
-  cpu->flags_[FLAG_HALF_CARRY] = 0;
+  cpu->flags[FLAG_ADD_SUB] = 0;
+  cpu->flags[FLAG_HALF_CARRY] = 0;
   UpdateFlagsRegister(cpu);
 }
 
 
 static void Set(Cpu* const cpu, const Instruction* const instr) {
-  uint8_t bit_idx = (instr->raw_instr_ & 0x38) >> 3;
+  uint8_t bit_idx = (instr->raw_instr & 0x38) >> 3;
 
-  if (instr->param2_ >= PARA_REG_A && instr->param2_ <= PARA_REG_L) {
-    uint8_t* reg = ReadReg(cpu, instr->param2_);
+  if (instr->param2 >= PARA_REG_A && instr->param2 <= PARA_REG_L) {
+    uint8_t* reg = ReadReg(cpu, instr->param2);
 
     *reg |= (1 << bit_idx);
   }
-  else if (instr->param2_ == PARA_MEM_REG_HL) {
+  else if (instr->param2 == PARA_MEM_REG_HL) {
     uint16_t reg_hl = ReadReg16(cpu, PARA_REG_HL);
-    uint8_t reg = BusRead(cpu->bus_, reg_hl);
+    uint8_t reg = BusRead(cpu->bus, reg_hl);
 
     reg |= (1 << bit_idx);
-    BusWrite(cpu->bus_, reg_hl, reg);
+    BusWrite(cpu->bus, reg_hl, reg);
   }
 }
 
 
 static void Reset(Cpu* const cpu, const Instruction* const instr) {
-  uint8_t bit_idx = (instr->raw_instr_ & 0x38) >> 3;
+  uint8_t bit_idx = (instr->raw_instr & 0x38) >> 3;
 
-  if (instr->param2_ >= PARA_REG_A && instr->param2_ <= PARA_REG_L) {
-    uint8_t* reg = ReadReg(cpu, instr->param2_);
+  if (instr->param2 >= PARA_REG_A && instr->param2 <= PARA_REG_L) {
+    uint8_t* reg = ReadReg(cpu, instr->param2);
 
     *reg &= ~(1 << bit_idx);
   }
-  else if (instr->param2_ == PARA_MEM_REG_HL) {
+  else if (instr->param2 == PARA_MEM_REG_HL) {
     uint16_t reg_hl = ReadReg16(cpu, PARA_REG_HL);
-    uint8_t reg = BusRead(cpu->bus_, reg_hl);
+    uint8_t reg = BusRead(cpu->bus, reg_hl);
 
     reg &= ~(1 << bit_idx);
-    BusWrite(cpu->bus_, reg_hl, reg);
+    BusWrite(cpu->bus, reg_hl, reg);
   }
 }
 
@@ -1056,18 +1080,18 @@ void CpuStep(Cpu* const cpu) {
 
   // Check Interrupts.
   if (cpu_ime_enable) {
-    cpu->interrupt_master_enable_ = 1;
+    cpu->interrupt_master_enable = 1;
     cpu_ime_enable = 0;
   }
-  pthread_mutex_lock(cpu->global_ctx_->interrupt_mtx);
-  if (cpu->interrupt_master_enable_ &&
-     (cpu->bus_->interrupts_enable_reg_ & cpu->bus_->interrupts_flag_) != 0) {
+  pthread_mutex_lock(cpu->global_ctx->interrupt_mtx);
+  if (cpu->interrupt_master_enable &&
+     (cpu->bus->interrupts_enable_reg & cpu->bus->interrupts_flag) != 0) {
     HandleInterrupt(cpu);
   }
-  pthread_mutex_unlock(cpu->global_ctx_->interrupt_mtx);
+  pthread_mutex_unlock(cpu->global_ctx->interrupt_mtx);
 
   // Fetch.
-  uint8_t opcode = BusRead(cpu->bus_, cpu->pc_++);
+  uint8_t opcode = BusRead(cpu->bus, cpu->pc++);
 
   // Decode.
   Instruction instr;
@@ -1085,17 +1109,17 @@ void CpuStep(Cpu* const cpu) {
   #endif
 
   // Execute.
-  switch(instr.opcode_) {
+  switch(instr.opcode) {
     case OP_NOOP:
       break;
     case OP_STOP:
       // Stop system and main clocks.
-      cpu->global_ctx_->status = STATUS_STOP;
+      cpu->global_ctx->status = STATUS_STOP;
       break;
     case OP_HALT:
-      cpu->global_ctx_->status = STATUS_HALT;
+      cpu->global_ctx->status = STATUS_HALT;
       Halt(cpu);
-      cpu->global_ctx_->status = STATUS_RUNNING;
+      cpu->global_ctx->status = STATUS_RUNNING;
       break;
     case OP_LD:
       Load(cpu, &instr);
@@ -1136,7 +1160,7 @@ void CpuStep(Cpu* const cpu) {
       break;
     case OP_DI:
       cpu_ime_enable = 0;
-      cpu->interrupt_master_enable_ = 0;
+      cpu->interrupt_master_enable = 0;
       break;
     case OP_EI:
       cpu_ime_enable = 1;
@@ -1163,27 +1187,27 @@ void CpuStep(Cpu* const cpu) {
       BitwisXor(cpu, &instr);
       break;
     case OP_CMP:
-      tmp = cpu->regs_.a_;
+      tmp = cpu->regs.a ;
       Subtract(cpu, &instr, /*carry=*/0);
-      cpu->regs_.a_ = tmp;
+      cpu->regs.a = tmp;
       break;
     case OP_CCF:
-      cpu->flags_[FLAG_CARRY] = !cpu->flags_[FLAG_CARRY];
-      cpu->flags_[FLAG_ADD_SUB] = 0;
-      cpu->flags_[FLAG_HALF_CARRY] = 0;
+      cpu->flags[FLAG_CARRY] = !cpu->flags[FLAG_CARRY];
+      cpu->flags[FLAG_ADD_SUB] = 0;
+      cpu->flags[FLAG_HALF_CARRY] = 0;
       break;
     case OP_SCF:
-      cpu->flags_[FLAG_CARRY] = 1;
-      cpu->flags_[FLAG_ADD_SUB] = 0;
-      cpu->flags_[FLAG_HALF_CARRY] = 0;
+      cpu->flags[FLAG_CARRY] = 1;
+      cpu->flags[FLAG_ADD_SUB] = 0;
+      cpu->flags[FLAG_HALF_CARRY] = 0;
       break;
     case OP_DAA:
       DecimalAdjustAccumulator(cpu);
       break;
     case OP_CPL:
-      cpu->regs_.a_ = ~cpu->regs_.a_;
-      cpu->flags_[FLAG_ADD_SUB] = 1;
-      cpu->flags_[FLAG_HALF_CARRY] = 1;
+      cpu->regs.a = ~cpu->regs.a ;
+      cpu->flags[FLAG_ADD_SUB] = 1;
+      cpu->flags[FLAG_HALF_CARRY] = 1;
       break;
     case OP_RLCA:
       Rotate(cpu, &instr, LEFT, /*carry=*/0);
@@ -1234,10 +1258,16 @@ void CpuStep(Cpu* const cpu) {
       Reset(cpu, &instr);
       break;
     case OP_ILLEGAL:
-      cpu->global_ctx_->error = ILLEGAL_INSTRUCTION;
+      cpu->global_ctx->error = ILLEGAL_INSTRUCTION;
       break;
     default:
       __builtin_unreachable();
   }
-  cpu->global_ctx_->clock += instr.cycles_;
+  cpu->global_ctx->clock += instr.cycles;
+  int machine_cycles = instr.cycles / 4;
+  pthread_mutex_lock(cpu->global_ctx->interrupt_mtx);
+  for (int i = 0; i < machine_cycles; ++i) {
+    TimerTick(&cpu->bus->timer, &cpu->bus->interrupts_flag);
+  }
+  pthread_mutex_unlock(cpu->global_ctx->interrupt_mtx);
 }

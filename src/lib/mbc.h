@@ -28,22 +28,22 @@ typedef enum MemoryBankingModeDef {
 } MemoryBankingMode;
 
 typedef struct RealTimeClockDef {
-  uint8_t seconds_;
-  uint8_t minutes_;
-  uint8_t hours_;
-  uint8_t l_day_counter_;
-  uint8_t h_day_counter_;
-  uint8_t latch_;
+  uint8_t seconds;
+  uint8_t minutes;
+  uint8_t hours;
+  uint8_t l_day_counter;
+  uint8_t h_day_counter;
+  uint8_t latch;
 } RealTimeClock;
 
 typedef struct MemBankControllerDef {
   // Used only for MBC3.
-  RealTimeClock rtc_;
-  uint8_t rom_bank_;
-  uint8_t ram_bank_;
-  MBCType type_;
-  RAMEnable ram_enable_;
-  MemoryBankingMode banking_mode_;
+  RealTimeClock rtc;
+  uint8_t rom_bank;
+  uint8_t ram_bank;
+  MBCType type;
+  RAMEnable ram_enable;
+  MemoryBankingMode banking_mode;
 } MemBankController;
 
 

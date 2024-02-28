@@ -6,18 +6,17 @@
 #include "instruction.h"
 
 #include <stdint.h>
-#include <string.h>
 
 
 typedef struct CpuRegistersDef {
-  uint8_t a_;
-  uint8_t f_;
-  uint8_t b_;
-  uint8_t c_;
-  uint8_t d_;
-  uint8_t e_;
-  uint8_t h_;
-  uint8_t l_;
+  uint8_t a;
+  uint8_t f;
+  uint8_t b;
+  uint8_t c;
+  uint8_t d;
+  uint8_t e;
+  uint8_t h;
+  uint8_t l;
 } CpuRegisters;
 
 typedef enum CpuFlagsDef {
@@ -28,13 +27,13 @@ typedef enum CpuFlagsDef {
 } CpuFlags;
 
 typedef struct CpuDef {
-  CpuRegisters regs_;
-  Bus* bus_;
-  GlobalCtx* global_ctx_;
-  uint8_t flags_[4];
-  uint16_t pc_;
-  uint16_t sp_;
-  int interrupt_master_enable_;
+  CpuRegisters regs;
+  Bus* bus;
+  GlobalCtx* global_ctx;
+  uint8_t flags[4];
+  uint16_t pc;
+  uint16_t sp;
+  int interrupt_master_enable;
 } Cpu;
 
 
