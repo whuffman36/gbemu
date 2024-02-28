@@ -2,9 +2,12 @@
 
 #include "instruction.h"
 
-#include "stdlib.h"
-#include "stdint.h"
-#include "stdio.h"
+#include <pthread.h>
+#include <stdlib.h>
+#include <stdint.h>
+#ifdef GB_DEBUG_MODE
+  #include <stdio.h>
+#endif
 
 
 #define MostSigByte_(bits16) (uint8_t)((bits16 & 0xFF00) >> 8)
@@ -47,45 +50,47 @@ void CpuInit(Cpu* const cpu) {
 }
 
 
-static void PrintInstruction(const Instruction* const instr) {
-  printf("Raw binary: 0x%02x\n", instr->raw_instr_);
-  printf("%s %s %s %s\n\n", _INSTRUCTION_STR_MAP[instr->opcode_],
-                            _INSTRUCTION_PARAM_STR_MAP[instr->param1_],
-                            _INSTRUCTION_PARAM_STR_MAP[instr->param2_],
-                            _INSTRUCTION_COND_STR_MAP[instr->cond_]);
-  printf("-------------------------------------------------\n\n");
-}
+#ifdef GB_DEBUG_MODE
+  static void PrintInstruction(const Instruction* const instr) {
+    printf("Raw binary: 0x%02x\n", instr->raw_instr_);
+    printf("%s %s %s %s\n\n", _INSTRUCTION_STR_MAP[instr->opcode_],
+                              _INSTRUCTION_PARAM_STR_MAP[instr->param1_],
+                              _INSTRUCTION_PARAM_STR_MAP[instr->param2_],
+                              _INSTRUCTION_COND_STR_MAP[instr->cond_]);
+    printf("-------------------------------------------------\n\n");
+  }
 
 
-static void PrintCpuState(const Cpu* const cpu) {
-  printf("Registers:\n");
-  printf("\tA: 0x%02x | %d\n", cpu->regs_.a_, cpu->regs_.a_);
-  printf("\tB: 0x%02x | %d\n", cpu->regs_.b_, cpu->regs_.b_);
-  printf("\tC: 0x%02x | %d\n", cpu->regs_.c_, cpu->regs_.c_);
-  printf("\tD: 0x%02x | %d\n", cpu->regs_.d_, cpu->regs_.d_);
-  printf("\tE: 0x%02x | %d\n", cpu->regs_.e_, cpu->regs_.e_);
-  printf("\tH: 0x%02x | %d\n", cpu->regs_.h_, cpu->regs_.h_);
-  printf("\tL: 0x%02x | %d\n", cpu->regs_.l_, cpu->regs_.l_);
-  printf("\tAF: 0x%04x | %d\n", CombineBytes_(cpu->regs_.a_, cpu->regs_.f_),
-                                CombineBytes_(cpu->regs_.a_, cpu->regs_.f_));
-  printf("\tBC: 0x%04x | %d\n", CombineBytes_(cpu->regs_.b_, cpu->regs_.c_),
-                                CombineBytes_(cpu->regs_.b_, cpu->regs_.c_));
-  printf("\tDE: 0x%04x | %d\n", CombineBytes_(cpu->regs_.d_, cpu->regs_.e_),
-                                CombineBytes_(cpu->regs_.d_, cpu->regs_.e_));
-  printf("\tHL: 0x%04x | %d\n", CombineBytes_(cpu->regs_.h_, cpu->regs_.l_),
-                                CombineBytes_(cpu->regs_.h_, cpu->regs_.l_));
-  printf("Flags:\n");
-  printf("\tZ: %d N: %d H: %d C: %d\n", cpu->flags_[FLAG_ZERO],
-                                        cpu->flags_[FLAG_ADD_SUB],
-                                        cpu->flags_[FLAG_HALF_CARRY],
-                                        cpu->flags_[FLAG_CARRY]);
-  printf("Program Counter:\n");
-  printf("\t0x%04x | %d\n", cpu->pc_, cpu->pc_);
-  printf("Stack Pointer:\n");
-  printf("\t0x%04x | %d\n", cpu->sp_, cpu->sp_);
-  printf("Master Interrupt Enable:\n");
-  printf("\t%s\n\n", cpu->interrupt_master_enable_ ? "Enabled" : "Disabled");
-}
+  static void PrintCpuState(const Cpu* const cpu) {
+    printf("Registers:\n");
+    printf("\tA: 0x%02x | %d\n", cpu->regs_.a_, cpu->regs_.a_);
+    printf("\tB: 0x%02x | %d\n", cpu->regs_.b_, cpu->regs_.b_);
+    printf("\tC: 0x%02x | %d\n", cpu->regs_.c_, cpu->regs_.c_);
+    printf("\tD: 0x%02x | %d\n", cpu->regs_.d_, cpu->regs_.d_);
+    printf("\tE: 0x%02x | %d\n", cpu->regs_.e_, cpu->regs_.e_);
+    printf("\tH: 0x%02x | %d\n", cpu->regs_.h_, cpu->regs_.h_);
+    printf("\tL: 0x%02x | %d\n", cpu->regs_.l_, cpu->regs_.l_);
+    printf("\tAF: 0x%04x | %d\n", CombineBytes_(cpu->regs_.a_, cpu->regs_.f_),
+                                  CombineBytes_(cpu->regs_.a_, cpu->regs_.f_));
+    printf("\tBC: 0x%04x | %d\n", CombineBytes_(cpu->regs_.b_, cpu->regs_.c_),
+                                  CombineBytes_(cpu->regs_.b_, cpu->regs_.c_));
+    printf("\tDE: 0x%04x | %d\n", CombineBytes_(cpu->regs_.d_, cpu->regs_.e_),
+                                  CombineBytes_(cpu->regs_.d_, cpu->regs_.e_));
+    printf("\tHL: 0x%04x | %d\n", CombineBytes_(cpu->regs_.h_, cpu->regs_.l_),
+                                  CombineBytes_(cpu->regs_.h_, cpu->regs_.l_));
+    printf("Flags:\n");
+    printf("\tZ: %d N: %d H: %d C: %d\n", cpu->flags_[FLAG_ZERO],
+                                          cpu->flags_[FLAG_ADD_SUB],
+                                          cpu->flags_[FLAG_HALF_CARRY],
+                                          cpu->flags_[FLAG_CARRY]);
+    printf("Program Counter:\n");
+    printf("\t0x%04x | %d\n", cpu->pc_, cpu->pc_);
+    printf("Stack Pointer:\n");
+    printf("\t0x%04x | %d\n", cpu->sp_, cpu->sp_);
+    printf("Master Interrupt Enable:\n");
+    printf("\t%s\n\n", cpu->interrupt_master_enable_ ? "Enabled" : "Disabled");
+  }
+#endif
 
 
 static void HandleInterrupt(Cpu* const cpu) {
@@ -219,6 +224,18 @@ static void UpdateFlagsRegister(Cpu* const cpu) {
   cpu->regs_.f_ |= cpu->flags_[FLAG_ADD_SUB] << 6;
   cpu->regs_.f_ |= cpu->flags_[FLAG_HALF_CARRY] << 5;
   cpu->regs_.f_ |= cpu->flags_[FLAG_CARRY] << 4;
+}
+
+
+static void Halt(Cpu* const cpu) {
+  pthread_mutex_lock(cpu->global_ctx_->interrupt_mtx);
+  while (!(cpu->interrupt_master_enable_ &&
+          (cpu->bus_->interrupts_enable_reg_ &
+           cpu->bus_->interrupts_flag_) != 0)) {
+    pthread_cond_wait(cpu->global_ctx_->interrupt_write, cpu->global_ctx_->interrupt_mtx);
+  }
+  HandleInterrupt(cpu);
+  pthread_mutex_unlock(cpu->global_ctx_->interrupt_mtx);
 }
 
 
@@ -1037,14 +1054,17 @@ void CpuStep(Cpu* const cpu) {
   static uint8_t cpu_ime_enable = 0;
   uint8_t tmp = 0;
 
+  // Check Interrupts.
   if (cpu_ime_enable) {
     cpu->interrupt_master_enable_ = 1;
     cpu_ime_enable = 0;
   }
+  pthread_mutex_lock(cpu->global_ctx_->interrupt_mtx);
   if (cpu->interrupt_master_enable_ &&
      (cpu->bus_->interrupts_enable_reg_ & cpu->bus_->interrupts_flag_) != 0) {
     HandleInterrupt(cpu);
   }
+  pthread_mutex_unlock(cpu->global_ctx_->interrupt_mtx);
 
   // Fetch.
   uint8_t opcode = BusRead(cpu->bus_, cpu->pc_++);
@@ -1059,8 +1079,10 @@ void CpuStep(Cpu* const cpu) {
     cb_prefix = 0;
   }
 
-  PrintCpuState(cpu);
-  PrintInstruction(&instr);
+  #ifdef GB_DEBUG_MODE
+    PrintCpuState(cpu);
+    PrintInstruction(&instr);
+  #endif
 
   // Execute.
   switch(instr.opcode_) {
@@ -1071,8 +1093,9 @@ void CpuStep(Cpu* const cpu) {
       cpu->global_ctx_->status = STATUS_STOP;
       break;
     case OP_HALT:
-      // Stop system clock.
       cpu->global_ctx_->status = STATUS_HALT;
+      Halt(cpu);
+      cpu->global_ctx_->status = STATUS_RUNNING;
       break;
     case OP_LD:
       Load(cpu, &instr);

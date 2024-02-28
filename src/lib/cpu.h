@@ -5,8 +5,8 @@
 #include "global.h"
 #include "instruction.h"
 
-#include "stdint.h"
-#include "string.h"
+#include <stdint.h>
+#include <string.h>
 
 
 typedef struct CpuRegistersDef {

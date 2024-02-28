@@ -1,6 +1,11 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
+#include <pthread.h>
+
+
+#define GB_DEBUG_MODE
+
 
 typedef enum ResultDef {
   RESULT_OK =  0,
@@ -49,6 +54,8 @@ typedef struct GlobalCtxDef {
   ErrorCode error;
   GBStatus status;
   unsigned int clock;
+  pthread_mutex_t* interrupt_mtx;
+  pthread_cond_t* interrupt_write;
 } GlobalCtx;
 
 #endif

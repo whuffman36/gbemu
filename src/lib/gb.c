@@ -5,9 +5,10 @@
 #include "cpu.h"
 #include "global.h"
 
-#include "stdio.h"
+#include <stdio.h>
 
-Result GameboyInit(Gameboy *gb, const char* const romfile) {
+
+Result GameboyInit(Gameboy* const gb, const char* const romfile) {
   gb->cartridge_ = CartridgeCreate(gb->global_ctx_, romfile);
   if (gb->cartridge_ == NULL) {
     return RESULT_NOTOK;
@@ -24,7 +25,7 @@ Result GameboyInit(Gameboy *gb, const char* const romfile) {
 }
 
 
-void GameboyDestroy(Gameboy *gb) {
+void GameboyDestroy(Gameboy* const gb) {
   if (gb == NULL) {
     return;
   }
@@ -34,23 +35,20 @@ void GameboyDestroy(Gameboy *gb) {
 }
 
 
-void GameboyRun(Gameboy *gb) {
-  char input;
+void* GameboyRunCpu(void* const gb_arg) {
+  Gameboy* const gb = (Gameboy* const)gb_arg;
+  //char input;
 
-  while(1) {
-    scanf("%c", &input);
-  
-    if (input == 'q') {
-      break;
-    }
-
+  while(gb->global_ctx_->error == NO_ERROR &&
+        gb->global_ctx_->status != STATUS_STOP) {
     CpuStep(&gb->cpu_);
-
-    if (gb->global_ctx_->status != STATUS_RUNNING) {
-      break;
-    }
-    if (gb->global_ctx_->error != NO_ERROR) {
-      break;
-    }
   }
+  pthread_exit(NULL);
+}
+
+
+void* GameboyRunPpu(void* const gb_arg) {
+  Gameboy* const gb = (Gameboy* const)gb_arg;
+
+  pthread_exit(NULL);
 }

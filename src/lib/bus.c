@@ -3,8 +3,8 @@
 #include "cartridge.h"
 #include "global.h"
 
-#include "stdint.h"
-#include "stdlib.h"
+#include <stdint.h>
+#include <stdlib.h>
 
 
 static const uint16_t _ROM_END = 0x8000;
@@ -39,6 +39,7 @@ Bus* BusCreate(GlobalCtx* const global_ctx, Cartridge* const cartridge) {
   bus->global_ctx_ = global_ctx;
   bus->cartridge_ = cartridge;
   bus->interrupts_enable_reg_ = 0;
+  bus->interrupts_flag_ = 0;
   bus->wram_bank_ = 0;
   bus->vram_bank_ = 0;
   return bus;

@@ -4,7 +4,7 @@
 #include "cartridge.h"
 #include "global.h"
 
-#include "stdint.h"
+#include <stdint.h>
 
 
 typedef struct BusDef {

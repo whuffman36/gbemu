@@ -15,10 +15,12 @@ typedef struct GameboyDef {
 } Gameboy;
 
 
-Result GameboyInit(Gameboy* gb, const char* const romfile);
+Result GameboyInit(Gameboy* const gb, const char* const romfile);
 
-void GameboyDestroy(Gameboy* gb);
+void GameboyDestroy(Gameboy* const gb);
 
-void GameboyRun(Gameboy* gb);
+void* GameboyRunCpu(void* const gb);
+
+void* GameboyRunPpu(void* const gb);
 
 #endif
