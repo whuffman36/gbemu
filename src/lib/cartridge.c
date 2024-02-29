@@ -15,7 +15,7 @@ static const uint16_t _ROM_BANK_SIZE = 0x4000;
 
 static const uint16_t _RAM_BEGIN = 0xA000;
 static const uint16_t _RAM_END = 0xC000;
-static const uint16_t _ram_bankSIZE = 0x2000;
+static const uint16_t _RAM_BANK_SIZE = 0x2000;
 
 static const uint16_t _RAM_ENABLE_END = 0x2000;
 static const uint16_t _ROM_BANK_SELECT_END = 0x4000;
@@ -220,14 +220,14 @@ uint8_t CartridgeRead(const Cartridge* const cart, uint16_t addr) {
 
       case MBC_1:
         // Read from RAM bank <mbc.ram_abnk_>.
-        return cart->ram[cart->mbc.ram_bank * _ram_bankSIZE + (addr - _RAM_BEGIN)];
+        return cart->ram[cart->mbc.ram_bank * _RAM_BANK_SIZE + (addr - _RAM_BEGIN)];
 
       case MBC_2:
         return cart->ram[addr - _RAM_BEGIN];
 
       case MBC_3:
         if (cart->mbc.banking_mode == RAM_BANKING) {
-          return cart->ram[cart->mbc.ram_bank * _ram_bankSIZE + (addr - _RAM_BEGIN)];
+          return cart->ram[cart->mbc.ram_bank * _RAM_BANK_SIZE + (addr - _RAM_BEGIN)];
         }
         else if (cart->mbc.banking_mode == RTC_BANKING) {
           // In RTC Register select mode (RTC_BANKING), reading from this
@@ -243,8 +243,6 @@ uint8_t CartridgeRead(const Cartridge* const cart, uint16_t addr) {
         break;
     }
   }
-  // Code should never reach this point. Return junk value.
-  // return 0xFF;
   __builtin_unreachable();
 }
 
@@ -420,7 +418,7 @@ Result CartridgeWrite(Cartridge* const cart, uint16_t addr,
       return RESULT_OK;
     }
 
-    cart->ram[cart->mbc.ram_bank * _ram_bankSIZE + (addr - _RAM_BEGIN)] = data;
+    cart->ram[cart->mbc.ram_bank * _RAM_BANK_SIZE + (addr - _RAM_BEGIN)] = data;
     return RESULT_OK;
   }
   // Code should never reach this point.

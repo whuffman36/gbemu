@@ -48,6 +48,8 @@ Bus* BusCreate(GlobalCtx* const global_ctx, Cartridge* const cartridge) {
   bus->interrupts_flag = 0;
   bus->wram_bank = 0;
   bus->vram_bank = 0;
+  TimerInit(&bus->timer);
+  bus->timer.div = 0xABCC;
   return bus;
 }
 

@@ -1,5 +1,6 @@
 #include "gb.h"
 #include "global.h"
+#include "translate.h"
 
 #include <pthread.h>
 #include <stdio.h>
@@ -41,16 +42,18 @@ int main(int argc, char** argv) {
   };
 
   Gameboy gb = {
-    .bus_ = NULL,
-    .cartridge_ = NULL,
-    .global_ctx_ = &global_ctx
+    .bus = NULL,
+    .cartridge = NULL,
+    .global_ctx = &global_ctx
   };
+
+  Translate(romfile);
 
   printf("Starting up gameboy...\n\n");
 
   Result result = GameboyInit(&gb, romfile);
   if (result == RESULT_NOTOK) {
-    printf("Fatal Error: %s\n", _ERROR_CODE_STRINGS[gb.global_ctx_->error]);
+    printf("Fatal Error: %s\n", _ERROR_CODE_STRINGS[gb.global_ctx->error]);
     return 1;
   }
 
@@ -72,7 +75,7 @@ int main(int argc, char** argv) {
   int window_open = 1;
 
   printf("Gameboy running!\n\n");
-
+/*
   pthread_t cpu;
   pthread_t ppu;
 
@@ -82,28 +85,35 @@ int main(int argc, char** argv) {
   if (pthread_create(&ppu, NULL, GameboyRunPpu, &gb) != 0) {
     printf("Fatal Error: could not create PPU thread\n");
   }
-
+*/
+  char c;
   SDL_Event event;
   while (window_open) {
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT) {
         window_open = 0;
-        gb.global_ctx_->status = STATUS_STOP;
+        gb.global_ctx->status = STATUS_STOP;
       }
-    }
-    if (gb.global_ctx_->error != NO_ERROR) {
-      printf("Fatal Error: %s\n\n", _ERROR_CODE_STRINGS[gb.global_ctx_->error]);
+    }/*
+    scanf("%c", &c);
+    if (c == 'q') {
+      break;
+    }*/
+    CpuStep(&gb.cpu);
+    if (gb.global_ctx->error != NO_ERROR) {
+      printf("Fatal Error: %s\n\n", _ERROR_CODE_STRINGS[gb.global_ctx->error]);
       break;
     }
   }
   SDL_DestroyWindow(window);
-
+/*
   if (pthread_join(cpu, NULL) != 0) {
     printf("Fatal Error: CPU thread failed to join successfully\n");
   }
   if (pthread_join(ppu, NULL) != 0) {
     printf("Fatal Error: PPU thread failed to join successfully\n");
   }
+*/
   pthread_mutex_destroy(&interrupt_mtx);
   pthread_cond_destroy(&interrupt_write);
   SDL_Quit();

@@ -1,6 +1,7 @@
 #include "cpu.h"
 
 #include "instruction.h"
+#include "timer.h"
 
 #include <pthread.h>
 #include <stdlib.h>
@@ -32,14 +33,14 @@ void CpuInit(Cpu* const cpu) {
   cpu->bus = NULL;
   cpu->global_ctx = NULL;
 
-  cpu->regs.a = 0x11;
-  cpu->regs.f = 0x80;
+  cpu->regs.a = 0x01;
+  cpu->regs.f = 0xB0;
   cpu->regs.b = 0x00;
-  cpu->regs.c = 0x00;
-  cpu->regs.d = 0xFF;
-  cpu->regs.e = 0x56;
-  cpu->regs.h = 0x00;
-  cpu->regs.l = 0x0D;
+  cpu->regs.c = 0x13;
+  cpu->regs.d = 0x00;
+  cpu->regs.e = 0xD8;
+  cpu->regs.h = 0x01;
+  cpu->regs.l = 0x4D;
   cpu->flags[FLAG_CARRY] = 0;
   cpu->flags[FLAG_HALF_CARRY] = 0;
   cpu->flags[FLAG_ADD_SUB] = 0;
@@ -89,6 +90,24 @@ void CpuInit(Cpu* const cpu) {
     printf("\t0x%04x | %d\n", cpu->sp, cpu->sp);
     printf("Master Interrupt Enable:\n");
     printf("\t%s\n\n", cpu->interrupt_master_enable ? "Enabled" : "Disabled");
+  }
+
+
+  static void PrintSerialDebug(Cpu* const cpu) {
+    static char dbg_msg[1024] = {0};
+    static int msg_size = 0;
+    if (cpu->bus->serial_data[1] == 0x81) {
+      printf("DBG: Byte received\n");
+      char c = (char)cpu->bus->serial_data[0];
+      printf("DBG: %c\n", c);
+      dbg_msg[msg_size++] = c;
+      cpu->bus->serial_data[1] = 0;
+    }
+
+    if (dbg_msg[0]) {
+      printf("DBG: Message size: %d\n", msg_size);
+      printf("DBG: %s\n", dbg_msg);
+    }
   }
 #endif
 
@@ -161,7 +180,7 @@ static void HandleInterrupt(Cpu* const cpu) {
 }
 
 
-static uint8_t* ReadReg(Cpu* const cpu, InstructionParameter reg) {
+static uint8_t* ReadReg(Cpu* const cpu, const InstructionParameter reg) {
   switch(reg) {
     case PARA_REG_A:
       return &cpu->regs.a ;
@@ -228,8 +247,8 @@ static void WriteReg16(Cpu* const cpu, InstructionParameter reg,
 
 static uint16_t ReadImm16(Cpu* const cpu) {
   // Memory is little endian.
-  uint16_t lo = (uint16_t)BusRead(cpu->bus, cpu->pc++);
-  uint16_t hi = (uint16_t)BusRead(cpu->bus, cpu->pc++);
+  uint8_t lo = BusRead(cpu->bus, cpu->pc++);
+  uint8_t hi = BusRead(cpu->bus, cpu->pc++);
   return CombineBytes_(hi, lo);
 }
 
@@ -274,8 +293,11 @@ static void LoadReg(Cpu* const cpu, const Instruction* const instr) {
     source = *ReadReg(cpu, instr->param2);
   }
   // Source is from memory[16 bit register].
-  else if (instr->param2 >= PARA_MEM_REG_BC && instr->param2 <= PARA_MEM_REG_HL) {
-    source = BusRead(cpu->bus, ReadReg16(cpu, instr->param2));
+  else if (instr->param2 >= PARA_MEM_REG_BC &&
+           instr->param2 <= PARA_MEM_REG_HL) {
+    source = BusRead(cpu->bus,
+                     ReadReg16(cpu, instr->param2 -
+                              (PARA_MEM_REG_BC - PARA_REG_BC)));
   }
   // Other sources.
   else {
@@ -360,7 +382,9 @@ static void LoadMem(Cpu* const cpu, const Instruction* const instr) {
   }
 
   if (instr->param1 >= PARA_MEM_REG_BC && instr->param1 <= PARA_MEM_REG_HL) {
-    BusWrite(cpu->bus, ReadReg16(cpu, instr->param1), source);
+    BusWrite(cpu->bus,
+             ReadReg16(cpu, instr->param1 - (PARA_MEM_REG_BC - PARA_REG_BC)),
+                       source);
   }
   else {
     switch (instr->param1) {
@@ -746,7 +770,7 @@ static void Subtract(Cpu* const cpu, const Instruction* const instr,
     cpu->regs.a -= *ReadReg(cpu, instr->param2);
   }
   else if (instr->param2 == PARA_MEM_REG_HL) {
-    cpu->regs.a -= BusRead(cpu->bus, ReadReg16(cpu, PARA_MEM_REG_HL));
+    cpu->regs.a -= BusRead(cpu->bus, ReadReg16(cpu, PARA_REG_HL));
   }
   else if (instr->param2 == PARA_IMM_8) {
     cpu->regs.a -= BusRead(cpu->bus, cpu->pc++);
@@ -812,7 +836,7 @@ static void BitwiseAnd(Cpu* const cpu, const Instruction* const instr) {
     cpu->regs.a &= *ReadReg(cpu, instr->param2);
   }
   else if (instr->param2 == PARA_MEM_REG_HL) {
-    cpu->regs.a &= BusRead(cpu->bus, ReadReg16(cpu, PARA_MEM_REG_HL));
+    cpu->regs.a &= BusRead(cpu->bus, ReadReg16(cpu, PARA_REG_HL));
   }
   else if (instr->param2 == PARA_IMM_8) {
     cpu->regs.a &= BusRead(cpu->bus, cpu->pc++);
@@ -831,7 +855,7 @@ static void BitwiseOr(Cpu* const cpu, const Instruction* const instr) {
     cpu->regs.a |= *ReadReg(cpu, instr->param2);
   }
   else if (instr->param2 == PARA_MEM_REG_HL) {
-    cpu->regs.a |= BusRead(cpu->bus, ReadReg16(cpu, PARA_MEM_REG_HL));
+    cpu->regs.a |= BusRead(cpu->bus, ReadReg16(cpu, PARA_REG_HL));
   }
   else if (instr->param2 == PARA_IMM_8) {
     cpu->regs.a |= BusRead(cpu->bus, cpu->pc++);
@@ -850,7 +874,7 @@ static void BitwisXor(Cpu* const cpu, const Instruction* const instr) {
     cpu->regs.a ^= *ReadReg(cpu, instr->param2);
   }
   else if (instr->param2 == PARA_MEM_REG_HL) {
-    cpu->regs.a ^= BusRead(cpu->bus, ReadReg16(cpu, PARA_MEM_REG_HL));
+    cpu->regs.a ^= BusRead(cpu->bus, ReadReg16(cpu, PARA_REG_HL));
   }
   else if (instr->param2 == PARA_IMM_8) {
     cpu->regs.a ^= BusRead(cpu->bus, cpu->pc++);
@@ -1104,8 +1128,9 @@ void CpuStep(Cpu* const cpu) {
   }
 
   #ifdef GB_DEBUG_MODE
-    PrintCpuState(cpu);
-    PrintInstruction(&instr);
+    //PrintCpuState(cpu);
+    //PrintInstruction(&instr);
+    //PrintSerialDebug(cpu);
   #endif
 
   // Execute.

@@ -15,13 +15,17 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 find_package(SDL2 REQUIRED COMPONENTS SDL2)
 
-add_library(gblib bus.c cartridge.c mbc.c gb.c cpu.c instruction.c)
+add_library(gblib bus.c cartridge.c mbc.c gb.c cpu.c instruction.c timer.c translate.c)
 
 target_link_libraries(gblib PUBLIC SDL2::SDL2)
 
 # Link header files.
 target_include_directories(gblib PUBLIC
                            "${PROJECT_SOURCE_DIR}")
+
+if (APPLE)
+  set(CMAKE_EXE_LINKER_FLAGS "-Wl,-stack_size,0x80000")
+endif (APPLE)
 
 # Compiler flags.
 target_compile_options(gblib PUBLIC

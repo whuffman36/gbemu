@@ -14,3 +14,4 @@ build/*
 .cache/*
 roms/*
 .DS_Store
+*output.txt

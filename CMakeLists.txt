@@ -34,6 +34,10 @@ target_include_directories(gbemu-test PUBLIC
                           "${PROJECT_SOURCE_DIR}/lib"
                           )
 
+if (APPLE)
+  set(CMAKE_EXE_LINKER_FLAGS "-Wl,-stack_size,0x80000")
+endif (APPLE)
+
 # Compiler flags.
 target_compile_options(gbemu PUBLIC
   "$<${gcc_like_cxx}:-g;-Wall;-Wextra;-pedantic;-Wunused>"
