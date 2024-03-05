@@ -30,9 +30,6 @@ typedef enum ShiftDirectionDef {
 
 
 void CpuInit(Cpu* const cpu) {
-  cpu->bus = NULL;
-  cpu->global_ctx = NULL;
-
   cpu->regs.a = 0x01;
   cpu->regs.f = 0xB0;
   cpu->regs.b = 0x00;
@@ -271,14 +268,15 @@ static void UpdateFlagsRegister(Cpu* const cpu) {
 
 
 static void Halt(Cpu* const cpu) {
-  pthread_mutex_lock(cpu->global_ctx->interrupt_mtx);
+  pthread_mutex_lock(&cpu->global_ctx->interrupt_mtx);
   while (!(cpu->interrupt_master_enable &&
           (cpu->bus->interrupts_enable_reg &
            cpu->bus->interrupts_flag) != 0)) {
-    pthread_cond_wait(cpu->global_ctx->interrupt_write, cpu->global_ctx->interrupt_mtx);
+    pthread_cond_wait(&cpu->global_ctx->interrupt_write,
+                      &cpu->global_ctx->interrupt_mtx);
   }
   HandleInterrupt(cpu);
-  pthread_mutex_unlock(cpu->global_ctx->interrupt_mtx);
+  pthread_mutex_unlock(&cpu->global_ctx->interrupt_mtx);
 }
 
 
@@ -1107,12 +1105,12 @@ void CpuStep(Cpu* const cpu) {
     cpu->interrupt_master_enable = 1;
     cpu_ime_enable = 0;
   }
-  pthread_mutex_lock(cpu->global_ctx->interrupt_mtx);
+  pthread_mutex_lock(&cpu->global_ctx->interrupt_mtx);
   if (cpu->interrupt_master_enable &&
      (cpu->bus->interrupts_enable_reg & cpu->bus->interrupts_flag) != 0) {
     HandleInterrupt(cpu);
   }
-  pthread_mutex_unlock(cpu->global_ctx->interrupt_mtx);
+  pthread_mutex_unlock(&cpu->global_ctx->interrupt_mtx);
 
   // Fetch.
   uint8_t opcode = BusRead(cpu->bus, cpu->pc++);
@@ -1128,9 +1126,9 @@ void CpuStep(Cpu* const cpu) {
   }
 
   #ifdef GB_DEBUG_MODE
-    //PrintCpuState(cpu);
-    //PrintInstruction(&instr);
-    //PrintSerialDebug(cpu);
+    PrintCpuState(cpu);
+    PrintInstruction(&instr);
+    PrintSerialDebug(cpu);
   #endif
 
   // Execute.
@@ -1290,9 +1288,9 @@ void CpuStep(Cpu* const cpu) {
   }
   cpu->global_ctx->clock += instr.cycles;
   int machine_cycles = instr.cycles / 4;
-  pthread_mutex_lock(cpu->global_ctx->interrupt_mtx);
+  pthread_mutex_lock(&cpu->global_ctx->interrupt_mtx);
   for (int i = 0; i < machine_cycles; ++i) {
     TimerTick(&cpu->bus->timer, &cpu->bus->interrupts_flag);
   }
-  pthread_mutex_unlock(cpu->global_ctx->interrupt_mtx);
+  pthread_mutex_unlock(&cpu->global_ctx->interrupt_mtx);
 }

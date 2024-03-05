@@ -1,5 +1,6 @@
 #include "cartridge.h"
 
+#include "disassemble.h"
 #include "global.h"
 #include "mbc.h"
 
@@ -147,18 +148,21 @@ static Result ReadRomFile(const char* const filename,
     }
   }
 
-  printf("Game Title: %s\n", header->title);
-  printf("Manufacterer Code: %s\n", header->manufacturer_code);
-  printf("Gameboy Color Mode: %s\n", header->gbc_flag > 0x7F ? "YES" : "NO");
-  printf("New Licensee Code: %c%c\n", header->new_licensee_code[0], header->new_licensee_code[1]);
-  printf("Super Gameboy Mode: %s\n", header->sgb_flag == 0x03 ? "YES" : "NO");
-  printf("Cartridge Type: %s\n", _CARTRIDGE_TYPES[header->cartridge_type]);
-  printf("ROM Size: %d KiB\n", 32 * (1 << header->rom_size));
-  printf("Measured ROM Size: %d KiB\n", rom_size / 1024);
-  printf("RAM Size: %d KiB\n", _RAM_SIZES[header->ram_size]);
-  printf("Destination Code: %s\n", header->destination_code == 0 ? "Japan" : "Overseas");
-  printf("Old Licensee Code: %02x\n", header->old_licensee_code);
-  printf("ROM Version: %d\n\n", header->rom_version);
+  #ifdef GB_DEBUG_MODE
+    printf("Game Title: %s\n", header->title);
+    printf("Manufacterer Code: %s\n", header->manufacturer_code);
+    printf("Gameboy Color Mode: %s\n", header->gbc_flag > 0x7F ? "YES" : "NO");
+    printf("New Licensee Code: %c%c\n", header->new_licensee_code[0], header->new_licensee_code[1]);
+    printf("Super Gameboy Mode: %s\n", header->sgb_flag == 0x03 ? "YES" : "NO");
+    printf("Cartridge Type: %s\n", _CARTRIDGE_TYPES[header->cartridge_type]);
+    printf("ROM Size: %d KiB\n", 32 * (1 << header->rom_size));
+    printf("Measured ROM Size: %d KiB\n", rom_size / 1024);
+    printf("RAM Size: %d KiB\n", _RAM_SIZES[header->ram_size]);
+    printf("Destination Code: %s\n", header->destination_code == 0 ? "Japan" : "Overseas");
+    printf("Old Licensee Code: %02x\n", header->old_licensee_code);
+    printf("ROM Version: %d\n\n", header->rom_version);
+    Disassemble(filename);
+  #endif
   return RESULT_OK;
 }
 

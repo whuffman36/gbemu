@@ -1,4 +1,5 @@
-#include "translate.h"
+#include "disassemble.h"
+
 #include "instruction.h"
 
 #include <stdio.h>
@@ -6,14 +7,14 @@
 #include <string.h>
 
 
-void Translate(const char* filename) {
+void Disassemble(const char* filename) {
   FILE* read_file = fopen(filename, "rb");
   if (read_file == NULL) {
     printf("Failed to open file %s\n", filename);
     exit(1);
   }
 
-  FILE* write_file = fopen("translate_output.txt", "a+");
+  FILE* write_file = fopen("translate_output.txt", "w");
   if (write_file == NULL) {
     printf("Failed to open file output.txt\n");
     exit(1);
@@ -99,4 +100,6 @@ void Translate(const char* filename) {
 
       byte_count++;
   }
+  fclose(read_file);
+  fclose(write_file);
 }

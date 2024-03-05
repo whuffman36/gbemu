@@ -15,7 +15,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 find_package(SDL2 REQUIRED COMPONENTS SDL2)
 
-add_library(gblib bus.c cartridge.c mbc.c gb.c cpu.c instruction.c timer.c translate.c)
+add_library(gblib bus.c cartridge.c mbc.c gb.c cpu.c instruction.c timer.c disassemble.c)
 
 target_link_libraries(gblib PUBLIC SDL2::SDL2)
 

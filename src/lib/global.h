@@ -22,6 +22,12 @@ typedef enum ErrorCodeDef {
   ILLEGAL_INSTRUCTION = 6,
   ILLEGAL_INSTRUCTION_PARAMETER = 7,
   UNKNOWN_INTERRUPT_REQUESTED = 8,
+  SDL_VIDEO_INIT_ERROR = 9,
+  SDL_WINDOW_CREATION_FAILED = 10,
+  CPU_THREAD_CREATION_FAILED = 11,
+  PPU_THREAD_CREATION_FAILED = 12,
+  CPU_THREAD_JOIN_FAILED = 13,
+  PPU_THREAD_JOIN_FAILED = 14,
   NO_ERROR,
 } ErrorCode;
 
@@ -34,7 +40,13 @@ static const char* _ERROR_CODE_STRINGS[] = {
   "MBC TYPE NOT SUPPORTED",
   "ILLEGAL INSTRUCTION",
   "ILLEGAL INSTRUCTION PARAMETER",
-  "UNKNOWN INTERRUPT REQUESTED"
+  "UNKNOWN INTERRUPT REQUESTED",
+  "SDL VIDEO INIT ERROR",
+  "SDL WINDOW CREATION FAIL",
+  "CPU THREAD CREATION FAILED",
+  "PPU THREAD CREATION FAILED",
+  "CPU THREAD JOIN FAILED",
+  "PPU THREAD JOIN FAILED"
 };
 
 typedef enum GBModeDef {
@@ -62,8 +74,8 @@ typedef struct GlobalCtxDef {
   ErrorCode error;
   GBStatus status;
   unsigned int clock;
-  pthread_mutex_t* interrupt_mtx;
-  pthread_cond_t* interrupt_write;
+  pthread_mutex_t interrupt_mtx;
+  pthread_cond_t interrupt_write;
 } GlobalCtx;
 
 
